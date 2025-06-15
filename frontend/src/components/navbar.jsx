@@ -1,8 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {assets} from '../assets/assets'
 import { NavLink, Link } from 'react-router-dom'
 
 const Navbar = () => {
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   return (
     <div className='flex items-center justify-between py-5 font-medium'>
 
@@ -46,6 +49,20 @@ const Navbar = () => {
             <img src={assets.shopping_bag} className='w-6 min-w-6' alt="" />
             <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>3</p>
           </Link>
+          <img onClick={() => setIsMenuOpen(true)} src={assets.menu_icon} className='w-6 cursor-pointer sm:hidden' alt="" />
+      </div>
+      {/* Mobile Menu */}
+      <div className={`absolute top-0 right-0 bottom-0 overflow-hidden bg-white transition-all ${isMenuOpen ? 'w-full' : 'w-0'}`}>
+        <div className='flex flex-col gap-5 text-gray-700 p-5'>
+          <div onClick={() => setIsMenuOpen(false)} className='flex items-center gap-4 p-3 cursor-pointer'>
+            <img className='h-4' src={assets.back_arrow} alt="" />
+            <p>Voltar</p>
+          </div>
+          <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 pl-6 border' to='/'>PÁGINA INICIAL</NavLink>
+          <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 pl-6 border' to='/collection'>COLEÇÃO</NavLink>
+          <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 pl-6 border' to='/about'>SOBRE NÓS</NavLink>
+          <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 pl-6 border' to='/contact'>CONTATO</NavLink>
+        </div>
       </div>
     </div>
   )
