@@ -4,7 +4,8 @@ import user from './user.png'
 import shopping_bag from './shopping_bag.png'
 import menu_icon from './menu_icon.png'
 import back_arrow from './back_arrow.png'
+import sneaker_example from './sneaker_example.png'
 
 export const assets = {
-  JezzLogo, search_icon, user, shopping_bag, menu_icon, back_arrow
+  JezzLogo, search_icon, user, shopping_bag, menu_icon, back_arrow, sneaker_example
 }
