@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
-import shopContextProvider from './context/shopContext.jsx'
+import ShopContextProvider from './context/ShopContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <shopContextProvider>
+    <ShopContextProvider>
       <App />
-    </shopContextProvider>
+    </ShopContextProvider>
   </BrowserRouter>,
 )

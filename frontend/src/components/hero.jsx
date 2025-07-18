@@ -1,7 +1,7 @@
 import React from 'react'
 import { assets } from '../assets/assets'
 
-const hero = () => {
+const Hero = () => {
   return (
     <div className='flex flex-col sm:flex-row border border-grey-400'>
       {/* Hero - Lado esquerdo */}
@@ -24,4 +24,4 @@ const hero = () => {
   )
 }
 
-export default hero
+export default Hero

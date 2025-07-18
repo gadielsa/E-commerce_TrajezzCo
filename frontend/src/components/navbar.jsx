@@ -9,7 +9,7 @@ const Navbar = () => {
   return (
     <div className='flex items-center justify-between py-5 font-medium'>
 
-      <img src={assets.JezzLogo} className='w-36' alt=""/>
+      <img src={assets.jezz_logo} className='w-36' alt=""/>
 
       <ul className='hidden sm:flex gap-5 text-sm text-gray-700'>
 
@@ -47,7 +47,7 @@ const Navbar = () => {
           </div>
           <Link to='/cart' className='relative'>
             <img src={assets.shopping_bag} className='w-6 min-w-6' alt="" />
-            <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>3</p>
+            <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>5</p>
           </Link>
           <img onClick={() => setIsMenuOpen(true)} src={assets.menu_icon} className='w-6 cursor-pointer sm:hidden' alt="" />
       </div>

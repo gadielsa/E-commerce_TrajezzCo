@@ -1,9 +1,9 @@
 import React, { useContext } from 'react'
-import { shopContext } from '../context/shopContext'
+import { ShopContext } from '../context/ShopContext'
 
-const latestCollection = () => {
+const LatestCollection = () => {
 
-  const { products } = useContext(shopContext)
+  const { products } = useContext(ShopContext)
 
   console.log(products)
 
@@ -14,4 +14,4 @@ const latestCollection = () => {
   )
 }
 
-export default latestCollection
+export default LatestCollection

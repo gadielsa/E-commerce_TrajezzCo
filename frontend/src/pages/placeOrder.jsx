@@ -1,6 +1,6 @@
 import React from 'react'
 
-const placeOrder = () => {
+const PlaceOrder = () => {
   return (
     <div>
       
@@ -8,4 +8,4 @@ const placeOrder = () => {
   )
 }
 
-export default placeOrder
+export default PlaceOrder

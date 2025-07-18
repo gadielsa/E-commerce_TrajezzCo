@@ -1,4 +1,4 @@
-import JezzLogo from './JezzLogo.png'
+import jezz_logo from './jezz_logo.png'
 import search_icon from './search_icon.png'
 import user from './user.png'
 import shopping_bag from './shopping_bag.png'
@@ -7,5 +7,25 @@ import back_arrow from './back_arrow.png'
 import sneaker_example from './sneaker_example.png'
 
 export const assets = {
-  JezzLogo, search_icon, user, shopping_bag, menu_icon, back_arrow, sneaker_example
+  jezz_logo,
+  search_icon,
+  user,
+  shopping_bag,
+  menu_icon,
+  back_arrow,
+  sneaker_example
 }
+
+export const products = [
+  {
+    _id: "aaaaa",
+    name: "sneaker",
+    description: "Air Max 97 - Nike",
+    price: 349,
+    image: [sneaker_example],
+    category: "Sneaker",
+    sizes: ["P", "M", "G"],
+    date: 1234567890000,
+    bestseller: true
+  },
+]
