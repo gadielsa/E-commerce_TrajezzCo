@@ -5,6 +5,9 @@ import shopping_bag from './shopping_bag.png'
 import menu_icon from './menu_icon.png'
 import back_arrow from './back_arrow.png'
 import sneaker_example from './sneaker_example.png'
+import exchange_icon from './exchange_icon.png'
+import headset_icon from './headset_icon.png'
+import circle_check_icon from './circle_check_icon.png'
 
 export const assets = {
   jezz_logo,
@@ -13,7 +16,10 @@ export const assets = {
   shopping_bag,
   menu_icon,
   back_arrow,
-  sneaker_example
+  sneaker_example,
+  exchange_icon,
+  headset_icon,
+  circle_check_icon
 }
 
 export const products = [
