@@ -8,6 +8,7 @@ import sneaker_example from './sneaker_example.png'
 import exchange_icon from './exchange_icon.png'
 import headset_icon from './headset_icon.png'
 import circle_check_icon from './circle_check_icon.png'
+import cross_icon from './cross_icon.png'
 
 export const assets = {
   jezz_logo,
@@ -19,7 +20,8 @@ export const assets = {
   sneaker_example,
   exchange_icon,
   headset_icon,
-  circle_check_icon
+  circle_check_icon,
+  cross_icon
 }
 
 export const products = [
