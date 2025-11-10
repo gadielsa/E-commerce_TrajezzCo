@@ -27,8 +27,8 @@ export const assets = {
 export const products = [
   {
     _id: "aaaaa",
-    name: "sneaker",
-    description: "Air Max 97 - Nike",
+    name: "TÊNIS AIR MAX 97",
+    description: "Tênis Nike Air Max 97 Masculino - O clássico que revolucionou o design dos tênis de corrida com sua estética inspirada em ondas e linhas futuristas. Com amortecimento visível em toda a extensão do solado, oferece conforto excepcional para o dia a dia.",
     price: 349,
     image: [sneaker_example],
     category: "Sneaker",
