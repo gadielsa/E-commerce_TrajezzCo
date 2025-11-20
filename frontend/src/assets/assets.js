@@ -9,6 +9,7 @@ import exchange_icon from './exchange_icon.png'
 import headset_icon from './headset_icon.png'
 import circle_check_icon from './circle_check_icon.png'
 import cross_icon from './cross_icon.png'
+import bin_icon from './bin_icon.png'
 
 export const assets = {
   jezz_logo,
@@ -21,7 +22,8 @@ export const assets = {
   exchange_icon,
   headset_icon,
   circle_check_icon,
-  cross_icon
+  cross_icon,
+  bin_icon,
 }
 
 export const products = [
@@ -29,7 +31,7 @@ export const products = [
     _id: "aaaaa",
     name: "TÊNIS AIR MAX 97",
     description: "Tênis Nike Air Max 97 Masculino - O clássico que revolucionou o design dos tênis de corrida com sua estética inspirada em ondas e linhas futuristas. Com amortecimento visível em toda a extensão do solado, oferece conforto excepcional para o dia a dia.",
-    price: 349,
+    price: 349.93,
     image: [sneaker_example],
     category: "Sneaker",
     sizes: ["P", "M", "G"],

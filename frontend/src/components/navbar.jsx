@@ -17,14 +17,14 @@ const Navbar = () => {
       <ul className='hidden sm:flex gap-5 text-sm text-gray-700'>
 
         <NavLink to='/' className={'flex flex-col items-center gap-1'}>
-          <p>PÁGINA INICIAL</p>
+          <p>FEED</p>
           <hr className='w-2/4 border-none h-[1.5px] bg-gray-700 hidden'/>
         </NavLink>
-        {/* <NavLink to='/collection' className={'flex flex-col items-center gap-1'}>
-          <p>COLEÇÃO</p>
+        <NavLink to='/estoque' className={'flex flex-col items-center gap-1'}>
+          <p>EM ESTOQUE</p>
           <hr className='w-2/4 border-none h-[1.5px] bg-gray-700 hidden'/>
         </NavLink>
-        <NavLink to='/about' className={'flex flex-col items-center gap-1'}>
+        {/* <NavLink to='/about' className={'flex flex-col items-center gap-1'}>
           <p>SOBRE NÓS</p>
           <hr className='w-2/4 border-none h-[1.5px] bg-gray-700 hidden'/>
         </NavLink>
@@ -37,7 +37,11 @@ const Navbar = () => {
 
       <div className='flex items-center gap-6'>
           {/* <img onClick={() => setShowSearch(true)} src={assets.search_icon} className='w-6 cursor-pointer' alt="" /> */}
-          <div className='group relative'>
+          <Link to='/cart' className='relative'>
+            <img src={assets.shopping_bag} className='w-6 min-w-6' alt="" />
+            <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>{getCartCount()}</p>
+          </Link>
+          <img onClick={() => setIsMenuOpen(true)} src={assets.menu_icon} className='w-6 cursor-pointer sm:hidden' alt="" /><div className='group relative'>
             <img src={assets.user} className='w-6 cursor-pointer' alt="" />
             <div className='group-hover:block hidden absolute dropdown-menu right-o pt-4'>
                 <div className='flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-500 rounded'>
@@ -47,12 +51,8 @@ const Navbar = () => {
                 </div>
             </div>
           </div>
-          <Link to='/cart' className='relative'>
-            <img src={assets.shopping_bag} className='w-6 min-w-6' alt="" />
-            <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>{getCartCount()}</p>
-          </Link>
-          <img onClick={() => setIsMenuOpen(true)} src={assets.menu_icon} className='w-6 cursor-pointer sm:hidden' alt="" />
       </div>
+      
       {/* Mobile Menu */}
       <div className={`absolute top-0 right-0 bottom-0 overflow-hidden bg-white transition-all ${isMenuOpen ? 'w-full' : 'w-0'}`}>
         <div className='flex flex-col gap-5 text-gray-700 p-5'>

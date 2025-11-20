@@ -30,14 +30,14 @@ const Footer = () => {
           <p className='text-xl font-medium mb-5'>ENTRE EM CONTATO</p>
           <ul className='flex flex-col gap-1 text-gray-600'>
             <li>(00)12345-6789</li>
-            <li>contact@jezzimports.com</li>
+            <li>contact@trajezz.com</li>
           </ul>
         </div>
       </div>
 
         <div>
           <hr />
-          <p className='py-5 text-sm text-center'>Copyright 2024@ jezzimports.com - Todos os direitos reservados.</p>
+          <p className='py-5 text-sm text-center'>Copyright 2025 @ trajezz.com - Todos os direitos reservados.</p>
         </div>
 
     </div>
