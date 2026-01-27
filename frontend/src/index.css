@@ -2,16 +2,46 @@
 
 @import "tailwindcss";
 
-a.active hr{
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: #fafafa;
+}
+
+a.active hr {
   display: block;
 }
 
+/* Scrollbar customizado */
 ::-webkit-scrollbar {
-  display: none;
+  width: 8px;
+  height: 8px;
 }
 
-@media (max-width:640px) {
-  a.active{
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Transições suaves */
+button, a, input {
+  transition: all 0.3s ease;
+}
+
+/* Responsive mobile menu */
+@media (max-width: 640px) {
+  a.active {
     background-color: black;
     color: white;
   }

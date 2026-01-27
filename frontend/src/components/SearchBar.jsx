@@ -4,15 +4,29 @@ import { assets } from '../assets/assets'
 
 const SearchBar = () => {
 
-  const {search, setSearch, showSearch, setShowSearch} = useContext(ShopContext)
+  const { search, setSearch, showSearch, setShowSearch } = useContext(ShopContext)
 
   return showSearch ? (
-    <div className='border-t border-b bg-gray-50 text-center'>
-      <div className='inline-flex items-center justify-center border border-gray-400 px-5 py-2 my-5 mx-3 rounded-full w-3/4 sm:w-1/2'>
-      <input value={search} onChange={(e) => setSearch(e.target.value)} className='flex-1 outline-none bg-inherit text-sm' type="text" placeholder='Procurar'/>
-      <img className='w-4' src={assets.search_icon} alt="" />
+    <div className='bg-white border-b-2 border-gray-200 py-6'>
+      <div className='flex items-center justify-center gap-4 px-4'>
+        <div className='w-full max-w-2xl flex items-center gap-3 border-2 border-gray-300 px-4 py-3 rounded-lg focus-within:border-black transition-colors'>
+          <img className='w-5 text-gray-400' src={assets.search_icon} alt="search" />
+          <input 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className='flex-1 outline-none text-base bg-transparent' 
+            type="text" 
+            placeholder='Procurar por produtos, marcas...'
+            autoFocus
+          />
+        </div>
+        <button 
+          onClick={() => setShowSearch(false)} 
+          className='text-gray-500 hover:text-black transition-colors p-2'
+        >
+          <img className='w-5' src={assets.cross_icon} alt="fechar" />
+        </button>
       </div>
-      <img onClick={() => setShowSearch(false)} className='inline w-3 cursor-pointer' src={assets.cross_icon} alt="" />
     </div>
   ) : null
 }

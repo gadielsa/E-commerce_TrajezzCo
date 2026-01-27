@@ -78,9 +78,27 @@ const ShopContextProvider = (props) => {
     return totalAmount
   }
 
+  const placeOrder = (deliveryInfo) => {
+    const orderData = {
+      orderId: Date.now(),
+      date: new Date().toLocaleDateString('pt-BR'),
+      items: cartItems,
+      deliveryInfo: deliveryInfo,
+      paymentMethod: deliveryInfo.method,
+      totalAmount: getCartAmount(),
+      status: 'Pronto para entrega'
+    }
+    
+    let orders = JSON.parse(localStorage.getItem('orders')) || []
+    orders.push(orderData)
+    localStorage.setItem('orders', JSON.stringify(orders))
+    
+    setCartItems({})
+  }
+
   const value = {
     products, currency, delivery_fee, search, setSearch, showSearch, setShowSearch, 
-    cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, navigate
+    cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, navigate, placeOrder
   }
   
 

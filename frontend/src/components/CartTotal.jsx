@@ -4,31 +4,55 @@ import { ShopContext } from '../context/ShopContext'
 
 const CartTotal = () => {
 
-  const {currency, delivery_fee, getCartAmount} = useContext(ShopContext)
+  const { currency, delivery_fee, getCartAmount } = useContext(ShopContext)
+
+  const subtotal = getCartAmount()
+  const total = subtotal === 0 ? 0 : subtotal + delivery_fee
+  const discountPix = (total * 0.06).toFixed(2)
+  const totalWithDiscount = (total - discountPix).toFixed(2)
 
   return (
     <div className='w-full'>
-      <div className='text-2xl'>
-        <Title text1={'TOTAL'} text2={'DA SACOLA'} />
+      <div className='mb-6'>
+        <h3 className='text-2xl font-bold text-gray-900'>Resumo do Carrinho</h3>
       </div>
 
-      <div className='flex flex-col gap-2 mt-2 text-sm'>
-        <div className='flex justify-between'>
+      <div className='space-y-4'>
+        <div className='flex justify-between items-center text-gray-600'>
           <p>Subtotal</p>
-          <p>{currency}{getCartAmount()}</p>
+          <p className='font-semibold'>{currency}{subtotal.toFixed(2)}</p>
         </div>
-        <hr />
-        <div className='flex justify-between'>
-          <p>Frete</p>
-          <p>{currency}{delivery_fee}</p>
+        
+        <div className='h-px bg-gray-200'></div>
+
+        <div className='flex justify-between items-center text-gray-600'>
+          <div className='flex items-center gap-2'>
+            <p>Frete</p>
+            <span className='text-xs bg-green-100 text-green-700 px-2 py-1 rounded'>Grátis acima de R$150</span>
+          </div>
+          <p className='font-semibold'>{currency}{subtotal >= 150 ? 0 : delivery_fee}</p>
         </div>
-        <hr />
-        <div className='flex justify-between'>
-          <b>Total</b>
-          <b>{currency}{getCartAmount() === 0 ? 0 : getCartAmount() + delivery_fee}</b>
+
+        <div className='h-px bg-gray-200'></div>
+
+        <div className='bg-blue-50 border border-blue-200 p-3 rounded-lg'>
+          <div className='flex justify-between items-center text-sm text-blue-800 mb-1'>
+            <p>Economize com PIX</p>
+            <p className='font-bold text-green-600'>-{currency}{discountPix}</p>
+          </div>
+          <p className='text-xs text-blue-600'>Aproveite 6% de desconto pagando via PIX</p>
+        </div>
+
+        <div className='h-px bg-gray-300'></div>
+
+        <div className='flex justify-between items-center pt-2'>
+          <p className='text-xl font-bold text-gray-900'>Total</p>
+          <div className='text-right'>
+            <p className='text-2xl font-bold text-gray-900'>{currency}{total.toFixed(2)}</p>
+            <p className='text-xs text-green-600'>Com PIX: {currency}{totalWithDiscount}</p>
+          </div>
         </div>
       </div>
-
     </div>
   )
 }
