@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
+import { toast } from 'react-toastify'
 
 const Orders = () => {
 
@@ -11,6 +12,10 @@ const Orders = () => {
     const savedOrders = JSON.parse(localStorage.getItem('orders')) || [];
     setOrders(savedOrders);
   }, []);
+
+  const handleTrackOrder = (orderId) => {
+    toast.info(`Rastreamento do pedido ${orderId} será implementado em breve!`);
+  };
 
   return (
     <div className='border-t pt-16'>
@@ -25,7 +30,15 @@ const Orders = () => {
         ) : (
           orders.map((order, orderIndex) => (
             <div key={orderIndex} className='py-4 border-t border-b'>
-              <p className='text-sm text-gray-600 mb-4'>Pedido ID: {order.orderId} | Data: {order.date}</p>
+              <div className='flex justify-between items-center mb-4'>
+                <p className='text-sm text-gray-600'>Pedido ID: {order.orderId} | Data: {order.date}</p>
+                <button 
+                  onClick={() => handleTrackOrder(order.orderId)}
+                  className='text-sm px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition'
+                >
+                  Rastrear Pedido
+                </button>
+              </div>
               {Object.keys(order.items).map((itemId, index) => {
                 const product = products.find((p) => p._id === itemId);
                 if (!product) return null;

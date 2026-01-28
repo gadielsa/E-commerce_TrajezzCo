@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Title from '../components/Title'
+import { assets } from '../assets/assets'
 import { toast } from 'react-toastify'
 
 const Contact = () => {
@@ -37,7 +38,7 @@ const Contact = () => {
         <div className='space-y-8'>
           <div className='bg-gray-50 p-8 rounded-lg'>
             <div className='flex items-start gap-4 mb-8'>
-              <div className='text-3xl'>📞</div>
+              <img src={assets.phone} className='h-6 w-6' alt="Telefone" />
               <div>
                 <h3 className='text-xl font-bold text-gray-900 mb-2'>Telefone</h3>
                 <p className='text-gray-600 mb-2'>(11) 9999-9999</p>
@@ -46,7 +47,7 @@ const Contact = () => {
             </div>
 
             <div className='flex items-start gap-4 mb-8'>
-              <div className='text-3xl'>✉️</div>
+              <img src={assets.mail} className='h-6 w-6' alt="Email" />
               <div>
                 <h3 className='text-xl font-bold text-gray-900 mb-2'>Email</h3>
                 <p className='text-gray-600'>contact@trajezz.com</p>
@@ -55,7 +56,7 @@ const Contact = () => {
             </div>
 
             <div className='flex items-start gap-4'>
-              <div className='text-3xl'>📍</div>
+              <img src={assets.map_pin} className='h-6 w-6' alt="Endereço" />
               <div>
                 <h3 className='text-xl font-bold text-gray-900 mb-2'>Endereço</h3>
                 <p className='text-gray-600'>São Paulo, SP - Brasil</p>
@@ -67,22 +68,10 @@ const Contact = () => {
           {/* Social Media */}
           <div className='bg-gray-50 p-8 rounded-lg'>
             <h3 className='text-xl font-bold text-gray-900 mb-6'>Redes Sociais</h3>
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='flex justify-start'>
               <a href='#' className='flex items-center justify-center gap-2 p-3 border-2 border-gray-300 rounded-lg hover:border-black hover:text-black transition-all'>
-                <span className='text-lg'>f</span>
-                <span className='text-sm font-medium'>Facebook</span>
-              </a>
-              <a href='#' className='flex items-center justify-center gap-2 p-3 border-2 border-gray-300 rounded-lg hover:border-black hover:text-black transition-all'>
-                <span className='text-lg'>📷</span>
+                <img src={assets.instagram} className='h-6 w-6' alt="Instagram" />
                 <span className='text-sm font-medium'>Instagram</span>
-              </a>
-              <a href='#' className='flex items-center justify-center gap-2 p-3 border-2 border-gray-300 rounded-lg hover:border-black hover:text-black transition-all'>
-                <span className='text-lg'>𝕏</span>
-                <span className='text-sm font-medium'>Twitter</span>
-              </a>
-              <a href='#' className='flex items-center justify-center gap-2 p-3 border-2 border-gray-300 rounded-lg hover:border-black hover:text-black transition-all'>
-                <span className='text-lg'>▶️</span>
-                <span className='text-sm font-medium'>YouTube</span>
               </a>
             </div>
           </div>
@@ -100,7 +89,7 @@ const Contact = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black'
+                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200 hover:border-gray-400'
                 placeholder='Seu nome'
               />
             </div>
@@ -112,7 +101,7 @@ const Contact = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black'
+                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200 hover:border-gray-400'
                 placeholder='seu@email.com'
               />
             </div>
@@ -123,7 +112,16 @@ const Contact = () => {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
-                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black'
+                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black appearance-none cursor-pointer transition-all duration-200 hover:border-gray-400'
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.25em 1.25em',
+                  paddingRight: '2.5rem',
+                  color: subject === '' ? '#9ca3af' : 'inherit',
+                  backgroundColor: 'transparent'
+                }}
               >
                 <option value="">Selecione um assunto</option>
                 <option value="duvida">Dúvida sobre Produto</option>
@@ -141,7 +139,7 @@ const Contact = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 required
                 rows="5"
-                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none'
+                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none transition-all duration-200 hover:border-gray-400'
                 placeholder='Sua mensagem aqui...'
               />
             </div>
@@ -149,7 +147,7 @@ const Contact = () => {
             <button
               type="submit"
               disabled={loading}
-              className='w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
             >
               {loading ? 'Enviando...' : 'Enviar Mensagem'}
             </button>

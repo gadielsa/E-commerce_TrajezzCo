@@ -7,9 +7,10 @@ import CartTotal from '../components/CartTotal'
 
 const Cart = () => {
 
-  const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext)
+  const { products, currency, cartItems, updateQuantity, navigate, calculateShipping, shippingCep } = useContext(ShopContext)
 
   const [cartData, setCartData] = useState([])
+  const [cep, setCep] = useState('')
 
   useEffect(() => {
 
@@ -27,6 +28,22 @@ const Cart = () => {
     }
     setCartData(tempData)
   },[cartItems])
+
+  const handleCepChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length <= 8) {
+      if (value.length > 5) {
+        value = value.slice(0, 5) + '-' + value.slice(5)
+      }
+      setCep(value)
+    }
+  }
+
+  const handleCalculateShipping = () => {
+    if (cep.replace(/\D/g, '').length === 8) {
+      calculateShipping(cep)
+    }
+  }
 
   return (
     <div className='border-t pt-14'>
@@ -49,11 +66,17 @@ const Cart = () => {
                     <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
                     <div className='flex flex-center gap-5 mt-2'>
                       <p>{currency}{productData.price}</p>
-                      <p className='px-2 sm:px-3 sm:py-1 border bg-slate-50'>{item.size}</p>
+                      <p className='inline-block text-sm px-3 py-1 border border-gray-300 rounded-md bg-slate-50 text-gray-700'>{item.size}</p>
                     </div>
                   </div>
                 </div>
-                <input onChange={(e)=>e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))} className='border max-w-10 sm:max-w-20 px-1 sm:px-2 py-1' type="number" min={1} defaultValue={item.quantity} />
+                <input
+                  onChange={(e)=>e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))}
+                  className='w-20 sm:w-24 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-black'
+                  type="number"
+                  min={1}
+                  defaultValue={item.quantity}
+                />
                 <img onClick={()=>updateQuantity(item._id, item.size, 0)} className='w-4 mr-4 sm:w-5 cursor-pointer' src={assets.bin_icon} alt="" />
               </div>
             )
@@ -64,9 +87,35 @@ const Cart = () => {
 
       <div className='flex justify-end my-20'>
         <div className='w-full sm:w-[450px]'>
+          {/* Cálculo de Frete */}
+          <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+            <h3 className='font-semibold text-gray-800 mb-3'>Calcular Frete</h3>
+            <div className='flex gap-2'>
+              <input
+                type='text'
+                placeholder='00000-000'
+                value={cep}
+                onChange={handleCepChange}
+                className='flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black'
+                maxLength={9}
+              />
+              <button
+                onClick={handleCalculateShipping}
+                className='bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors'
+              >
+                Calcular
+              </button>
+            </div>
+            {shippingCep && (
+              <p className='text-xs text-gray-600 mt-2'>
+                Frete calculado para o CEP: {shippingCep}
+              </p>
+            )}
+          </div>
+
           <CartTotal/>
           <div className='w-full text-end'>
-            <button onClick={()=>navigate('/checkout')} className='bg-black text-white text-sm my-8 px-8 py-3'>Comprar</button>
+            <button onClick={()=>navigate('/checkout')} className='bg-black text-white text-sm my-8 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors'>Comprar</button>
           </div>
         </div>
       </div>

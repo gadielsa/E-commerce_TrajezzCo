@@ -28,7 +28,7 @@ const NewsletterBox = () => {
         
         <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row gap-3 mt-8 max-w-lg mx-auto'>
           <input 
-            className='flex-1 px-4 py-3 rounded-lg text-black outline-none placeholder-gray-500 focus:ring-2 focus:ring-yellow-500' 
+            className='flex-1 px-4 py-3 rounded-lg text-white outline-none placeholder-gray-500 focus:ring-2 focus:ring-yellow-500' 
             type="email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -38,7 +38,7 @@ const NewsletterBox = () => {
           <button 
             type='submit' 
             disabled={loading}
-            className='bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-8 py-3 rounded-lg transition-all disabled:opacity-50'
+            className='bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-8 py-3 rounded-lg transition-all disabled:opacity-50'
           >
             {loading ? 'Enviando...' : 'Inscrever'}
           </button>

@@ -87,8 +87,20 @@ const Collection = () => {
         <div className={`border border-gray-300 pl-5 py-3 my-5 ${showFilter ? '' : 'hidden'} sm:block`}>
           <p className='mb-3 text-sm font-medium'>PREÇO</p>
           <div className='flex gap-3 text-gray-700'>
-            <input type="number" value={priceRange[0]} onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])} placeholder='Min' className='w-16 px-2 py-1 border border-gray-300 rounded' />
-            <input type="number" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])} placeholder='Max' className='w-16 px-2 py-1 border border-gray-300 rounded' />
+            <input
+              type="number"
+              value={priceRange[0]}
+              onChange={(e) => setPriceRange([parseInt(e.target.value || 0), priceRange[1]])}
+              placeholder='Min'
+              className='w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-black'
+            />
+            <input
+              type="number"
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value || 0)])}
+              placeholder='Max'
+              className='w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-black'
+            />
           </div>
         </div>
 

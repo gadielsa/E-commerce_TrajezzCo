@@ -11,6 +11,13 @@ import circle_check_icon from './circle_check_icon.png'
 import cross_icon from './cross_icon.png'
 import bin_icon from './bin_icon.png'
 import pix_logo from './pix_logo.png'
+import heart from './heart.png'
+import instagram from './instagram.png'
+import phone from './phone.png'
+import mail from './mail.png'
+import map_pin from './map-pin.png'
+import shield_check from './shield-check.png'
+import lightbulb from './lightbulb.png'
 
 export const assets = {
   jezz_logo,
@@ -25,8 +32,14 @@ export const assets = {
   circle_check_icon,
   cross_icon,
   bin_icon,
-  pix_logo
-
+  pix_logo,
+  heart,
+  instagram,
+  phone,
+  mail,
+  map_pin,
+  shield_check,
+  lightbulb
 }
 
 export const products = [

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
 
 const Login = () => {
 
@@ -19,21 +20,23 @@ const Login = () => {
       if (currentState === 'Login') {
         localStorage.setItem('userEmail', email)
         localStorage.setItem('userName', email.split('@')[0])
-        alert('Login realizado com sucesso!')
+        toast.success('Login realizado com sucesso!')
+        setLoading(false)
+        navigate('/')
       } else {
         localStorage.setItem('userEmail', email)
         localStorage.setItem('userName', name)
-        alert('Conta criada com sucesso! Faça login.')
+        toast.success('Conta criada com sucesso! Faça login.')
         setCurrentState('Login')
+        setLoading(false)
+        navigate('/login')
       }
-      setLoading(false)
-      navigate('/')
     }, 1000)
   }
 
   return (
-    <div className='flex items-center justify-center min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-md w-full space-y-8'>
+    <div className='flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-md w-full space-y-8 pt-10'>
         <div className='text-center'>
           <h2 className='text-3xl font-bold text-gray-900 mb-2'>{currentState}</h2>
           <p className='text-gray-600'>

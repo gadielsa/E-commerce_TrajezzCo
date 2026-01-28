@@ -34,17 +34,14 @@ const About = () => {
         </div>
         <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
           <div className='p-8 bg-gray-50 rounded-lg text-center'>
-            <div className='text-4xl mb-4'>🎯</div>
             <h3 className='text-xl font-bold text-gray-900 mb-3'>Qualidade</h3>
             <p className='text-gray-600'>Apenas produtos autênticos e de qualidade premium</p>
           </div>
           <div className='p-8 bg-gray-50 rounded-lg text-center'>
-            <div className='text-4xl mb-4'>💪</div>
             <h3 className='text-xl font-bold text-gray-900 mb-3'>Confiança</h3>
             <p className='text-gray-600'>Transparência total com nossos clientes em tudo o que fazemos</p>
           </div>
           <div className='p-8 bg-gray-50 rounded-lg text-center'>
-            <div className='text-4xl mb-4'>🚀</div>
             <h3 className='text-xl font-bold text-gray-900 mb-3'>Inovação</h3>
             <p className='text-gray-600'>Sempre trazendo as últimas tendências e lançamentos</p>
           </div>

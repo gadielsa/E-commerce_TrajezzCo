@@ -7,8 +7,11 @@ import Contact from './pages/Contact'
 import Product from './pages/Product'
 import Cart from './pages/Cart'
 import Login from './pages/Login'
+import Profile from './pages/Profile'
+import Favorites from './pages/Favorites'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
+// import Careers from './pages/Careers'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
@@ -29,21 +32,23 @@ const App = () => {
         draggable
         pauseOnHover
       />
-      <Navbar />
       <SearchBar />
+      <Navbar />
       
       <main className='flex-1 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
         <Routes>
-          <Route path='/' element={<Navigate to="/feed" replace />} />
-          <Route path='/feed' element={<Home />} />
-          <Route path='/em-estoque' element={<Collection />} />
-          <Route path='/about' element={<About />} />
-          <Route path='/contact' element={<Contact />} />
+          <Route path='/' element={<Home />} />
+          <Route path='/estoque' element={<Collection />} />
+          <Route path='/sobre' element={<About />} />
+          <Route path='/contato' element={<Contact />} />
+          {/* <Route path='/carreiras' element={<Careers />} /> */}
           <Route path='/product/:productId' element={<Product />} />
-          <Route path='/cart' element={<Cart />} />
+          <Route path='/carrinho' element={<Cart />} />
           <Route path='/login' element={<Login />} />
+          <Route path='/perfil' element={<Profile />} />
+          <Route path='/favoritos' element={<Favorites />} />
           <Route path='/checkout' element={<Checkout />} />
-          <Route path='/orders' element={<Orders />} />
+          <Route path='/pedidos' element={<Orders />} />
         </Routes>
       </main>
       

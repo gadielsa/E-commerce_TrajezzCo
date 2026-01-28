@@ -4,10 +4,10 @@ import { ShopContext } from '../context/ShopContext'
 
 const CartTotal = () => {
 
-  const { currency, delivery_fee, getCartAmount } = useContext(ShopContext)
+  const { currency, shippingCost, getCartAmount } = useContext(ShopContext)
 
   const subtotal = getCartAmount()
-  const total = subtotal === 0 ? 0 : subtotal + delivery_fee
+  const total = subtotal === 0 ? 0 : subtotal + shippingCost
   const discountPix = (total * 0.06).toFixed(2)
   const totalWithDiscount = (total - discountPix).toFixed(2)
 
@@ -25,15 +25,23 @@ const CartTotal = () => {
         
         <div className='h-px bg-gray-200'></div>
 
-        <div className='flex justify-between items-center text-gray-600'>
-          <div className='flex items-center gap-2'>
-            <p>Frete</p>
-            <span className='text-xs bg-green-100 text-green-700 px-2 py-1 rounded'>Grátis acima de R$150</span>
-          </div>
-          <p className='font-semibold'>{currency}{subtotal >= 150 ? 0 : delivery_fee}</p>
-        </div>
+        {subtotal > 0 && (
+          <>
+            <div className='flex justify-between items-center text-gray-600'>
+              <div className='flex items-center gap-2'>
+                <p>Frete</p>
+                {subtotal >= 500 ? (
+                  <span className='text-xs bg-green-100 text-green-700 px-2 py-1 rounded'>Grátis</span>
+                ) : (
+                  <span className='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded'>Grátis acima de R$500</span>
+                )}
+              </div>
+              <p className='font-semibold'>{currency}{shippingCost.toFixed(2)}</p>
+            </div>
 
-        <div className='h-px bg-gray-200'></div>
+            <div className='h-px bg-gray-200'></div>
+          </>
+        )}
 
         <div className='bg-blue-50 border border-blue-200 p-3 rounded-lg'>
           <div className='flex justify-between items-center text-sm text-blue-800 mb-1'>

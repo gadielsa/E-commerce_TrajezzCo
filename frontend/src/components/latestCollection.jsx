@@ -32,7 +32,7 @@ const LatestCollection = () => {
 
       {/* CTA Button */}
       <div className='text-center mt-12'>
-          <a href='/em-estoque' className='inline-block bg-black text-white px-12 py-3 rounded text-sm font-semibold hover:bg-gray-800 transition-all duration-300 hover:scale-105'>
+          <a href='/estoque' className='inline-block bg-black text-white px-12 py-3 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all duration-300 hover:scale-105'>
             VER EM ESTOQUE
         </a>
       </div>

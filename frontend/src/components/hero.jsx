@@ -18,7 +18,7 @@ const Hero = () => {
           <p className='text-gray-600 text-base md:text-lg mb-8 max-w-md'>
             Descubra os modelos mais esperados do ano com tecnologia de ponta e design exclusivo.
           </p>
-                <Link to='/em-estoque' className='inline-block bg-black text-white px-8 py-3 rounded text-sm font-semibold hover:bg-gray-800 transition-all duration-300 hover:scale-105'>
+                <Link to='/estoque' className='inline-block bg-black text-white px-8 py-3 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all duration-300 hover:scale-105'>
             EXPLORAR AGORA
           </Link>
         </div>
