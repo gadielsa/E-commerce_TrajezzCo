@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import {assets} from '../assets/assets'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
@@ -8,18 +8,33 @@ const Navbar = () => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userName, setUserName] = useState('')
   const navigate = useNavigate()
 
   const {setShowSearch, getCartCount} = useContext(ShopContext)
 
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    const name = localStorage.getItem('userName')
+    setIsLoggedIn(!!token)
+    setUserName(name || '')
+  }, [])
+
   const handleLogout = () => {
+    localStorage.removeItem('token')
     localStorage.removeItem('userName')
     localStorage.removeItem('userEmail')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('isAdmin')
     localStorage.removeItem('userPhone')
     localStorage.removeItem('userAddress')
     localStorage.removeItem('userCity')
     localStorage.removeItem('userZipCode')
     localStorage.removeItem('userCountry')
+    setIsLoggedIn(false)
+    setUserName('')
     toast.success('Você foi desconectado!')
     navigate('/login')
   }
@@ -62,9 +77,19 @@ const Navbar = () => {
             <img src={assets.user} className='w-5 cursor-pointer hover:scale-110 transition-transform' alt="user" />
             <div className='group-hover:block hidden absolute dropdown-menu right-0 pt-4 z-50'>
               <div className='flex flex-col gap-3 w-40 py-4 px-5 bg-white border border-gray-200 shadow-lg rounded'>
-                <Link to='/pedidos' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Meus Pedidos</Link>
-                <Link to='/perfil' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Perfil</Link>
-                <p onClick={handleLogout} className='cursor-pointer hover:text-black text-gray-600 text-sm'>Sair</p>
+                {isLoggedIn ? (
+                  <>
+                    <p className='text-xs text-gray-500 font-semibold'>Olá, {userName}</p>
+                    <Link to='/pedidos' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Meus Pedidos</Link>
+                    <Link to='/perfil' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Perfil</Link>
+                    <p onClick={handleLogout} className='cursor-pointer hover:text-black text-gray-600 text-sm'>Sair</p>
+                  </>
+                ) : (
+                  <>
+                    <Link to='/login' className='cursor-pointer hover:text-black text-gray-600 text-sm font-semibold'>Login</Link>
+                    <p className='text-xs text-gray-400'>Faça login para acessar sua conta</p>
+                  </>
+                )}
               </div>
             </div>
           </div>

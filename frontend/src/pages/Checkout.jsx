@@ -97,53 +97,58 @@ const Checkout = () => {
     
     let paymentDetails = null;
     
-    // Processa pagamento com PIX
-    if (method === 'pix') {
-      const totalAmount = getCartAmount() + shippingCost;
-      const pixAmount = totalAmount * 0.94; // 6% de desconto
-      const orderData = placeOrder(deliveryInfo, null);
-      
-      const pixPayment = generatePixPayment(pixAmount, orderData.orderId);
-      setPixData(pixPayment);
-      setShowPixModal(true);
-      
-      toast.success('Pedido realizado! Aguardando pagamento PIX');
-      return; // Não navega ainda, mostra o modal do PIX
-    }
-    
-    // Processa pagamento com cartão de crédito
-    if (method === 'cc') {
-      if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
-        toast.error('Por favor, preencha todos os dados do cartão');
-        return;
+    try {
+      // Processa pagamento com PIX
+      if (method === 'pix') {
+        const totalAmount = getCartAmount() + shippingCost;
+        const pixAmount = totalAmount * 0.94; // 6% de desconto
+        const orderData = await placeOrder(deliveryInfo, null);
+        
+        const pixPayment = generatePixPayment(pixAmount, orderData._id);
+        setPixData(pixPayment);
+        setShowPixModal(true);
+        
+        toast.success('Pedido realizado! Aguardando pagamento PIX');
+        return; // Não navega ainda, mostra o modal do PIX
       }
       
-      const cardData = {
-        number: cardNumber,
-        name: cardName,
-        expiry: cardExpiry,
-        cvv: cardCvv,
-        installments: installments
-      };
-      
-      const totalAmount = getCartAmount() + shippingCost;
-      const paymentResult = processCreditCardPayment(cardData, totalAmount);
-      
-      if (!paymentResult.success) {
-        toast.error(paymentResult.message);
-        return;
+      // Processa pagamento com cartão de crédito
+      if (method === 'cc') {
+        if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
+          toast.error('Por favor, preencha todos os dados do cartão');
+          return;
+        }
+        
+        const cardData = {
+          number: cardNumber,
+          name: cardName,
+          expiry: cardExpiry,
+          cvv: cardCvv,
+          installments: installments
+        };
+        
+        const totalAmount = getCartAmount() + shippingCost;
+        const paymentResult = processCreditCardPayment(cardData, totalAmount);
+        
+        if (!paymentResult.success) {
+          toast.error(paymentResult.message);
+          return;
+        }
+        
+        paymentDetails = {
+          transactionId: paymentResult.transactionId,
+          cardBrand: paymentResult.cardBrand,
+          lastDigits: paymentResult.lastDigits,
+          installments: installments
+        };
+        
+        await placeOrder(deliveryInfo, paymentDetails);
+        toast.success('Pagamento aprovado! Pedido realizado com sucesso');
+        navigate('/orders');
       }
-      
-      paymentDetails = {
-        transactionId: paymentResult.transactionId,
-        cardBrand: paymentResult.cardBrand,
-        lastDigits: paymentResult.lastDigits,
-        installments: installments
-      };
-      
-      placeOrder(deliveryInfo, paymentDetails);
-      toast.success('Pagamento aprovado! Pedido realizado com sucesso');
-      navigate('/pedidos');
+    } catch (error) {
+      toast.error(error.message || 'Erro ao processar pagamento');
+      console.error('Payment error:', error);
     }
   };
   

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import API_URL from '../config/api'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -16,30 +17,65 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({})
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Buscar dados do usuário do localStorage
-    const userName = localStorage.getItem('userName')
-    const userEmail = localStorage.getItem('userEmail')
-    const userPhone = localStorage.getItem('userPhone') || ''
-    const userAddress = localStorage.getItem('userAddress') || ''
-    const userCity = localStorage.getItem('userCity') || ''
-    const userZipCode = localStorage.getItem('userZipCode') || ''
-    const userCountry = localStorage.getItem('userCountry') || ''
+    // Buscar dados do usuário da API
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          navigate('/login')
+          return
+        }
 
-    const userData = {
-      name: userName || 'Usuário',
-      email: userEmail || 'email@example.com',
-      phone: userPhone,
-      address: userAddress,
-      city: userCity,
-      zipCode: userZipCode,
-      country: userCountry
+        const response = await fetch(`${API_URL}/users/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Erro ao buscar dados do usuário')
+        }
+
+        const data = await response.json()
+        const userData = data.user || data.data || {}
+        
+        const userInfo = {
+          name: userData.name || localStorage.getItem('userName') || 'Usuário',
+          email: userData.email || localStorage.getItem('userEmail') || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          city: userData.city || '',
+          zipCode: userData.zipCode || '',
+          country: userData.country || 'Brasil'
+        }
+
+        setUser(userInfo)
+        setFormData(userInfo)
+      } catch (error) {
+        console.error('Erro ao buscar dados do usuário:', error)
+        // Fallback para localStorage
+        const userData = {
+          name: localStorage.getItem('userName') || 'Usuário',
+          email: localStorage.getItem('userEmail') || '',
+          phone: localStorage.getItem('userPhone') || '',
+          address: localStorage.getItem('userAddress') || '',
+          city: localStorage.getItem('userCity') || '',
+          zipCode: localStorage.getItem('userZipCode') || '',
+          country: localStorage.getItem('userCountry') || 'Brasil'
+        }
+        setUser(userData)
+        setFormData(userData)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setUser(userData)
-    setFormData(userData)
-  }, [])
+    fetchUserData()
+  }, [navigate])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -53,19 +89,49 @@ const Profile = () => {
     setIsEditing(true)
   }
 
-  const handleSaveClick = () => {
-    // Salvar dados no localStorage
-    localStorage.setItem('userName', formData.name)
-    localStorage.setItem('userEmail', formData.email)
-    localStorage.setItem('userPhone', formData.phone)
-    localStorage.setItem('userAddress', formData.address)
-    localStorage.setItem('userCity', formData.city)
-    localStorage.setItem('userZipCode', formData.zipCode)
-    localStorage.setItem('userCountry', formData.country)
+  const handleSaveClick = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        navigate('/login')
+        return
+      }
 
-    setUser(formData)
-    setIsEditing(false)
-    toast.success('Perfil atualizado com sucesso!')
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          zipCode: formData.zipCode,
+          country: formData.country
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar perfil')
+      }
+
+      // Atualizar localStorage também
+      localStorage.setItem('userName', formData.name)
+      localStorage.setItem('userPhone', formData.phone)
+      localStorage.setItem('userAddress', formData.address)
+      localStorage.setItem('userCity', formData.city)
+      localStorage.setItem('userZipCode', formData.zipCode)
+      localStorage.setItem('userCountry', formData.country)
+
+      setUser(formData)
+      setIsEditing(false)
+      toast.success('Perfil atualizado com sucesso!')
+    } catch (error) {
+      toast.error(error.message || 'Erro ao atualizar perfil')
+      console.error('Update profile error:', error)
+    }
   }
 
   const handleCancel = () => {
@@ -74,8 +140,11 @@ const Profile = () => {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
     localStorage.removeItem('userName')
     localStorage.removeItem('userEmail')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('isAdmin')
     localStorage.removeItem('userPhone')
     localStorage.removeItem('userAddress')
     localStorage.removeItem('userCity')
@@ -83,6 +152,10 @@ const Profile = () => {
     localStorage.removeItem('userCountry')
     toast.success('Você foi desconectado!')
     navigate('/login')
+  }
+
+  if (loading) {
+    return <div className='min-h-screen bg-gray-50 py-12 px-4 flex items-center justify-center'>Carregando...</div>
   }
 
   return (
@@ -133,10 +206,8 @@ const Profile = () => {
                   type="email"
                   name="email"
                   value={formData.email}
-                  onChange={handleInputChange}
-                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent'
-                />
-              </div>
+                  disabled
+                  className='w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed'
 
               {/* Telefone */}
               <div>
