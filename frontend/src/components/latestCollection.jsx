@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 import Title from './Title'
 import ProductItem from './ProductItem'
 
@@ -9,7 +9,14 @@ const LatestCollection = () => {
   const [latestProducts, setLatestProducts] = useState([])
 
   useEffect(() => {
-    setLatestProducts(products.slice(0, 10))
+    console.log('LatestCollection - Produtos recebidos:', products)
+    if (products && Array.isArray(products)) {
+      console.log('LatestCollection - Total de produtos:', products.length)
+      setLatestProducts(products.slice(0, 10))
+    } else {
+      console.warn('LatestCollection - Produtos inválido ou não array:', products)
+      setLatestProducts([])
+    }
   }, [products])
 
   return (

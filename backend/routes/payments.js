@@ -1,141 +1,167 @@
-const express = require('express');
+import express from 'express';
+import Stripe from 'stripe';
+import { protect } from '../middleware/auth.js';
+import Order from '../models/Order.js';
+
 const router = express.Router();
-const Order = require('../models/Order');
-const auth = require('../middleware/auth');
-const stripeService = require('../services/stripeService');
-const mercadoPagoService = require('../services/mercadoPagoService');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-router.post('/create-intent', auth, async (req, res) => {
+// Criar Payment Intent
+router.post('/create-intent', protect, async (req, res) => {
   try {
-    const { amount, currency = 'brl' } = req.body;
+    const { amount, description, orderId } = req.body;
 
-    if (!amount) {
-      return res.status(400).json({ success: false, message: 'Amount is required' });
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Valor inválido' 
+      });
     }
 
-    const result = await stripeService.createPaymentIntent(amount, currency, {
-      userId: req.user.id
+    // Criar Payment Intent no Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe usa centavos
+      currency: 'brl',
+      description: description || `Pedido ${orderId}`,
+      metadata: {
+        orderId: orderId || '',
+        userId: req.user._id.toString()
+      }
     });
 
-    res.json(result);
+    res.json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Erro ao criar Payment Intent:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao processar pagamento'
+    });
   }
 });
 
-router.post('/mercadopago-preference', auth, async (req, res) => {
+// Verificar status do pagamento
+router.get('/status/:paymentIntentId', protect, async (req, res) => {
   try {
-    const { items, email } = req.body;
-
-    if (!items || !email) {
-      return res.status(400).json({ success: false, message: 'Items and email are required' });
-    }
-
-    const result = await mercadoPagoService.createPreference(items, email);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  try {
-    const webhook = stripeService.verifyWebhookSignature(req);
-
-    if (!webhook) {
-      return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
-    }
-
-    const { type, data } = webhook;
-    const intent = data.object;
-
-    if (type === 'payment_intent.succeeded') {
-      await Order.findOneAndUpdate(
-        { 'paymentDetails.intentId': intent.id },
-        { paymentStatus: 'confirmed', status: 'processing' },
-        { new: true }
-      );
-    } else if (type === 'payment_intent.payment_failed') {
-      await Order.findOneAndUpdate(
-        { 'paymentDetails.intentId': intent.id },
-        { paymentStatus: 'failed' },
-        { new: true }
-      );
-    } else if (type === 'charge.refunded') {
-      await Order.findOneAndUpdate(
-        { 'paymentDetails.chargeId': intent.id },
-        { paymentStatus: 'refunded', status: 'cancelled' },
-        { new: true }
-      );
-    }
-
-    res.json({ success: true, received: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.post('/webhook-mercadopago', async (req, res) => {
-  try {
-    const { id, type } = req.body;
-
-    if (type === 'payment') {
-      const result = await mercadoPagoService.getPayment(id);
-
-      if (result.success) {
-        const payment = result.payment;
-        
-        if (payment.status === 'approved') {
-          await Order.findOneAndUpdate(
-            { 'paymentDetails.paymentId': payment.id },
-            { paymentStatus: 'confirmed', status: 'processing' },
-            { new: true }
-          );
-        } else if (payment.status === 'rejected') {
-          await Order.findOneAndUpdate(
-            { 'paymentDetails.paymentId': payment.id },
-            { paymentStatus: 'failed' },
-            { new: true }
-          );
-        }
-      }
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Mercado Pago webhook error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.post('/refund', auth, async (req, res) => {
-  try {
-    const { orderId, amount } = req.body;
-
-    const order = await Order.findById(orderId);
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
-    }
-
-    if (order.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Unauthorized' });
-    }
-
-    const result = await stripeService.refundPayment(
-      order.paymentDetails.intentId,
-      amount || order.totalAmount
+    const paymentIntent = await stripe.paymentIntents.retrieve(
+      req.params.paymentIntentId
     );
 
-    if (result.success) {
-      await Order.findByIdAndUpdate(orderId, { paymentStatus: 'refunded' }, { new: true });
-    }
-
-    res.json(result);
+    res.json({
+      success: true,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount / 100,
+      currency: paymentIntent.currency
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Erro ao verificar pagamento:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao verificar status do pagamento'
+    });
   }
 });
 
-module.exports = router;
+// Webhook do Stripe
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error('⚠️  Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Processar evento
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        console.log('✅ PaymentIntent succeeded:', paymentIntent.id);
+        
+        // Atualizar pedido
+        if (paymentIntent.metadata.orderId) {
+          await Order.findByIdAndUpdate(paymentIntent.metadata.orderId, {
+            paymentStatus: 'paid',
+            status: 'Pagamento aprovado',
+            'paymentDetails.transactionId': paymentIntent.id
+          });
+        }
+        break;
+
+      case 'payment_intent.payment_failed':
+        const failedIntent = event.data.object;
+        console.log('❌ PaymentIntent failed:', failedIntent.id);
+        
+        if (failedIntent.metadata.orderId) {
+          await Order.findByIdAndUpdate(failedIntent.metadata.orderId, {
+            paymentStatus: 'failed',
+            status: 'Aguardando pagamento'
+          });
+        }
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Erro ao processar webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Solicitar reembolso
+router.post('/refund', protect, async (req, res) => {
+  try {
+    const { paymentIntentId, amount, orderId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment Intent ID é obrigatório'
+      });
+    }
+
+    // Criar reembolso
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount: amount ? Math.round(amount * 100) : undefined
+    });
+
+    // Atualizar pedido
+    if (orderId) {
+      await Order.findByIdAndUpdate(orderId, {
+        paymentStatus: 'refunded',
+        status: 'Devolvido'
+      });
+    }
+
+    res.json({
+      success: true,
+      refund: {
+        id: refund.id,
+        amount: refund.amount / 100,
+        status: refund.status
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao processar reembolso:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao processar reembolso'
+    });
+  }
+});
+
+export default router;

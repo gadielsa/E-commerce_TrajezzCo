@@ -1,75 +1,29 @@
-const cloudinary = require('../config/cloudinary');
-const fs = require('fs');
+import cloudinary from '../config/cloudinary.js';
 
-exports.uploadImage = async (req, res) => {
+export const uploadImage = async (req, res) => {
   try {
-    if (!req.files || !req.files.image) {
-      return res.status(400).json({ success: false, message: 'No image provided' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Nenhum arquivo enviado' });
     }
 
-    const image = req.files.image;
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${req.file.mimetype};base64,${base64}`;
 
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(image.tempFilePath, {
-      folder: 'trajezz-ecommerce'
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: 'trajezz/products',
+      resource_type: 'image'
     });
 
-    // Delete temporary file
-    fs.unlinkSync(image.tempFilePath);
-
-    res.json({
+    return res.status(201).json({
       success: true,
+      message: 'Imagem enviada com sucesso',
       url: result.secure_url,
       publicId: result.public_id
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.deleteImage = async (req, res) => {
-  try {
-    const { publicId } = req.body;
-
-    if (!publicId) {
-      return res.status(400).json({ success: false, message: 'Public ID is required' });
-    }
-
-    await cloudinary.uploader.destroy(publicId);
-
-    res.json({ success: true, message: 'Image deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.uploadMultiple = async (req, res) => {
-  try {
-    if (!req.files || !req.files.images) {
-      return res.status(400).json({ success: false, message: 'No images provided' });
-    }
-
-    const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
-    const uploadedImages = [];
-
-    for (const image of images) {
-      const result = await cloudinary.uploader.upload(image.tempFilePath, {
-        folder: 'trajezz-ecommerce'
-      });
-
-      uploadedImages.push({
-        url: result.secure_url,
-        publicId: result.public_id
-      });
-
-      fs.unlinkSync(image.tempFilePath);
-    }
-
-    res.json({
-      success: true,
-      images: uploadedImages
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao enviar imagem'
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
   }
 };

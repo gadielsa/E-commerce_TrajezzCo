@@ -1,13 +1,15 @@
 import React, { useContext } from 'react'
 import Title from './Title'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 
 const CartTotal = () => {
 
-  const { currency, shippingCost, getCartAmount } = useContext(ShopContext)
+  const { currency, shippingCost, getCartAmount, couponCode, couponDiscount } = useContext(ShopContext)
 
   const subtotal = getCartAmount()
   const total = subtotal === 0 ? 0 : subtotal + shippingCost
+  const discountValue = subtotal === 0 ? 0 : Math.min(couponDiscount || 0, total)
+  const totalAfterDiscount = Math.max(0, total - discountValue)
   const discountPix = (total * 0.06).toFixed(2)
   const totalWithDiscount = (total - discountPix).toFixed(2)
 
@@ -43,6 +45,16 @@ const CartTotal = () => {
           </>
         )}
 
+        {discountValue > 0 && (
+          <>
+            <div className='flex justify-between items-center text-gray-600'>
+              <p>Desconto{couponCode ? ` (${couponCode})` : ''}</p>
+              <p className='font-semibold text-green-600'>-{currency}{discountValue.toFixed(2)}</p>
+            </div>
+            <div className='h-px bg-gray-200'></div>
+          </>
+        )}
+
         <div className='bg-blue-50 border border-blue-200 p-3 rounded-lg'>
           <div className='flex justify-between items-center text-sm text-blue-800 mb-1'>
             <p>Economize com PIX</p>
@@ -56,8 +68,8 @@ const CartTotal = () => {
         <div className='flex justify-between items-center pt-2'>
           <p className='text-xl font-bold text-gray-900'>Total</p>
           <div className='text-right'>
-            <p className='text-2xl font-bold text-gray-900'>{currency}{total.toFixed(2)}</p>
-            <p className='text-xs text-green-600'>Com PIX: {currency}{totalWithDiscount}</p>
+            <p className='text-2xl font-bold text-gray-900'>{currency}{totalAfterDiscount.toFixed(2)}</p>
+            <p className='text-xs text-green-600'>Com PIX: {currency}{(totalAfterDiscount * 0.94).toFixed(2)}</p>
           </div>
         </div>
       </div>

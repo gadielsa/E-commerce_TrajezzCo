@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
+import upload from '../middleware/upload.js';
+import { uploadImage } from '../controllers/uploadController.js';
+import { protect, adminOnly } from '../middleware/auth.js';
+
 const router = express.Router();
-const { uploadImage, deleteImage, uploadMultiple } = require('../controllers/uploadController');
-const auth = require('../middleware/auth');
 
-router.post('/image', auth, uploadImage);
-router.post('/images', auth, uploadMultiple);
-router.delete('/image', auth, deleteImage);
+router.post('/', protect, adminOnly, upload.single('image'), uploadImage);
 
-module.exports = router;
+export default router;

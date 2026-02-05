@@ -2,8 +2,11 @@ import React, { useContext, useState, useEffect, useMemo } from 'react'
 import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
 import { assets } from '../assets/assets'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 import { toast } from 'react-toastify'
+import paymentService from '../services/paymentService'
+import orderService from '../services/orderService'
+import { authService } from '../services/authService'
 
 const Checkout = () => {
   
@@ -12,6 +15,7 @@ const Checkout = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [addressNumber, setAddressNumber] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
@@ -26,9 +30,10 @@ const Checkout = () => {
   const [installments, setInstallments] = useState(1);
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixData, setPixData] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const {navigate, cartItems, placeOrder, shippingCep, shippingCity, shippingState, shippingAddress, 
-    generatePixPayment, processCreditCardPayment, calculateInstallments, getCartAmount, shippingCost,
+    generatePixPayment, calculateInstallments, getCartAmount, shippingCost,
     detectCardBrand} = useContext(ShopContext);
 
   // Calcula opções de parcelamento
@@ -56,6 +61,37 @@ const Checkout = () => {
     }
   }, [shippingCep, shippingCity, shippingState, shippingAddress]);
 
+  // Preenche dados do perfil do usuário
+  useEffect(() => {
+    const fillFromProfile = async () => {
+      try {
+        if (!authService.isAuthenticated()) {
+          return;
+        }
+
+        const data = await authService.getProfile();
+        const userData = data.user || data.data || {};
+        const name = userData.name || '';
+        const [first = '', ...rest] = name.split(' ');
+        const last = rest.join(' ');
+
+        setFirstName(prev => prev || first);
+        setLastName(prev => prev || last);
+        setEmail(prev => prev || userData.email || '');
+        setPhone(prev => prev || userData.phone || '');
+        setAddress(prev => prev || userData.address?.street || '');
+        setAddressNumber(prev => prev || userData.address?.number || '');
+        setCity(prev => prev || userData.address?.city || '');
+        setZipCode(prev => prev || userData.address?.zipCode || '');
+        setCountry(prev => prev || userData.address?.country || 'Brasil');
+      } catch (error) {
+        console.error('Erro ao carregar perfil no checkout:', error);
+      }
+    };
+
+    fillFromProfile();
+  }, []);
+
   // Formata número do cartão
   const formatCardNumber = (value) => {
     const cleaned = value.replace(/\s/g, '');
@@ -72,8 +108,29 @@ const Checkout = () => {
     return cleaned;
   };
 
+  const formatZipCode = (value) => {
+    let digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length > 5) {
+      return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    }
+    return digits;
+  };
+
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (!digits) return '';
+    if (digits.length <= 2) return `(${digits}`;
+
+    const ddd = digits.slice(0, 2);
+    const rest = digits.slice(2);
+    if (rest.length <= 5) {
+      return `(${ddd}) ${rest}`;
+    }
+    return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`;
+  };
+
   const handlePlaceOrder = async () => {
-    if (!firstName || !lastName || !email || !address || !city || !state || !zipCode || !country || !phone) {
+    if (!firstName || !lastName || !email || !address || !addressNumber || !city || !state || !zipCode || !country || !phone) {
       toast.error('Por favor, preencha todos os campos');
       return;
     }
@@ -82,11 +139,14 @@ const Checkout = () => {
       return;
     }
     
+    setIsProcessing(true);
+    
     const deliveryInfo = {
       firstName,
       lastName,
       email,
       address,
+      addressNumber,
       city,
       state,
       zipCode,
@@ -95,20 +155,19 @@ const Checkout = () => {
       method
     };
     
-    let paymentDetails = null;
-    
     try {
       // Processa pagamento com PIX
       if (method === 'pix') {
         const totalAmount = getCartAmount() + shippingCost;
         const pixAmount = totalAmount * 0.94; // 6% de desconto
-        const orderData = await placeOrder(deliveryInfo, null);
+        const orderData = await placeOrder(deliveryInfo, null, { clearCart: false, toastOnSuccess: false });
         
         const pixPayment = generatePixPayment(pixAmount, orderData._id);
         setPixData(pixPayment);
         setShowPixModal(true);
         
-        toast.success('Pedido realizado! Aguardando pagamento PIX');
+        toast.success('Pedido realizado! Escaneie o QR Code para pagar');
+        setIsProcessing(false);
         return; // Não navega ainda, mostra o modal do PIX
       }
       
@@ -116,39 +175,59 @@ const Checkout = () => {
       if (method === 'cc') {
         if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
           toast.error('Por favor, preencha todos os dados do cartão');
+          setIsProcessing(false);
           return;
         }
         
-        const cardData = {
-          number: cardNumber,
-          name: cardName,
-          expiry: cardExpiry,
-          cvv: cardCvv,
-          installments: installments
-        };
-        
+        // 1. Cria o pedido no backend (sem limpar carrinho)
+        const orderData = await placeOrder(deliveryInfo, null, { clearCart: false, toastOnSuccess: false });
+        const orderId = orderData._id;
         const totalAmount = getCartAmount() + shippingCost;
-        const paymentResult = processCreditCardPayment(cardData, totalAmount);
         
-        if (!paymentResult.success) {
-          toast.error(paymentResult.message);
-          return;
+        // 2. Cria PaymentIntent no backend
+        const paymentIntentData = await paymentService.createPaymentIntent(
+          Math.round(totalAmount * 100), // Stripe usa centavos
+          `Pedido ${orderData.orderNumber}`,
+          orderId
+        );
+        
+        if (!paymentIntentData.clientSecret) {
+          throw new Error('Falha ao criar intenção de pagamento');
         }
         
-        paymentDetails = {
-          transactionId: paymentResult.transactionId,
-          cardBrand: paymentResult.cardBrand,
-          lastDigits: paymentResult.lastDigits,
+        // 3. Redireciona para página de confirmação de pagamento com Stripe
+        // (em produção, usar Stripe Elements ou Stripe.js para tokenização segura)
+        const paymentDetails = {
+          transactionId: paymentIntentData.id,
+          cardBrand: detectCardBrand(cardNumber),
+          lastDigits: cardNumber.slice(-4),
           installments: installments
         };
         
-        await placeOrder(deliveryInfo, paymentDetails);
-        toast.success('Pagamento aprovado! Pedido realizado com sucesso');
-        navigate('/orders');
+        // 4. Atualiza pedido com informações de pagamento
+        await orderService.updateOrderPayment(
+          orderId,
+          paymentDetails,
+          'pending',
+          'Aguardando confirmação de pagamento'
+        );
+        
+        // 5. Salva informações da intenção de pagamento para o cliente
+        sessionStorage.setItem('paymentIntent', JSON.stringify({
+          clientSecret: paymentIntentData.clientSecret,
+          orderId: orderId,
+          amount: totalAmount
+        }));
+        
+        // 6. Redireciona para página de confirmação/autenticação
+        navigate(`/confirmar-pagamento/${orderId}`);
+        toast.info('Redirecionando para confirmação de pagamento...');
       }
     } catch (error) {
       toast.error(error.message || 'Erro ao processar pagamento');
       console.error('Payment error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -190,9 +269,15 @@ const Checkout = () => {
             <input value={email} onChange={(e) => setEmail(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="email" placeholder='seu@email.com' />
           </div>
 
-          <div className='mb-6'>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>Endereço</label>
-            <input value={address} onChange={(e) => setAddress(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="text" placeholder='Rua, número, complemento' />
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>Endereço</label>
+              <input value={address} onChange={(e) => setAddress(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="text" placeholder='Rua, avenida, complemento' />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>Número</label>
+              <input value={addressNumber} onChange={(e) => setAddressNumber(e.target.value.replace(/\D/g, ''))} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="text" placeholder='Número da casa' />
+            </div>
           </div>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
@@ -202,14 +287,31 @@ const Checkout = () => {
             </div>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-2'>Estado</label>
-              <input value={state} onChange={(e) => setState(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="text" placeholder='SP' />
+              <input
+                value={state}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2)
+                  setState(value)
+                }}
+                className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black'
+                type="text"
+                placeholder='SP'
+                maxLength={2}
+              />
             </div>
           </div>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-2'>CEP</label>
-              <input value={zipCode} onChange={(e) => setZipCode(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="text" placeholder='00000-000' />
+              <input
+                value={zipCode}
+                onChange={(e) => setZipCode(formatZipCode(e.target.value))}
+                className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black'
+                type="text"
+                placeholder='00000-000'
+                maxLength={9}
+              />
             </div>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-2'>País</label>
@@ -219,7 +321,14 @@ const Checkout = () => {
 
           <div className='mb-6'>
             <label className='block text-sm font-medium text-gray-700 mb-2'>Telefone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' type="tel" placeholder='(11) 9999-9999' />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black'
+              type="tel"
+              placeholder='(11) 99999-9999'
+              maxLength={15}
+            />
           </div>
         </div>
 
@@ -357,8 +466,8 @@ const Checkout = () => {
             </p>
           </div>
 
-          <button onClick={handlePlaceOrder} className='w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mt-6 text-lg'>
-            FINALIZAR PEDIDO
+          <button onClick={handlePlaceOrder} disabled={isProcessing} className='w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mt-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed' >
+            {isProcessing ? 'PROCESSANDO...' : 'FINALIZAR PEDIDO'}
           </button>
           
             <button onClick={() => navigate('/estoque')} className='w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:border-gray-500 transition-all mt-3'>

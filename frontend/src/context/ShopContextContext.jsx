@@ -1,0 +1,41 @@
+import { createContext } from 'react'
+
+export const ShopContext = createContext({
+	search: '',
+	setSearch: () => {},
+	showSearch: false,
+	setShowSearch: () => {},
+	cartItems: {},
+	addToCart: () => {},
+	getCartCount: () => 0,
+	updateQuantity: () => {},
+	getCartAmount: () => 0,
+	navigate: () => {},
+	placeOrder: async () => {},
+	favorites: [],
+	toggleFavorite: () => {},
+	isFavorite: () => false,
+	getFavorites: () => [],
+	shippingCost: 0,
+	shippingCep: '',
+	calculateShipping: async () => {},
+	resetShipping: () => {},
+	shippingCity: '',
+	shippingState: '',
+	shippingCountry: 'Brasil',
+	shippingAddress: '',
+	generatePixPayment: () => null,
+	processCreditCardPayment: () => ({ success: false }),
+	validateCreditCard: () => false,
+	detectCardBrand: () => 'Desconhecida',
+	calculateInstallments: () => [],
+	couponCode: '',
+	couponDiscount: 0,
+	applyCoupon: () => false,
+	removeCoupon: () => {}
+	,
+	user: null,
+	setUser: () => {}
+	,
+	clearCart: () => {}
+})

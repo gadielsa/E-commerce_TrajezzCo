@@ -1,123 +1,115 @@
-# Backend - E-commerce API
+# TrajezzCo Backend API
 
-## Overview
+Backend API para o e-commerce TrajezzCo desenvolvido com Node.js, Express e MongoDB.
 
-This is a Node.js/Express backend API for the TrajezzCo e-commerce platform.
+## 🚀 Começando
 
-## Project Structure
+### Pré-requisitos
 
-```
-backend/
-├── config/              # Configuration files (DB, Cloudinary, etc)
-├── controllers/         # Request handlers
-├── middleware/          # Custom middleware
-├── models/             # MongoDB schemas
-├── routes/             # API routes
-├── services/           # Business logic (Stripe, Mercado Pago, etc)
-├── .env               # Environment variables (development)
-├── .env.example       # Example environment variables
-├── package.json       # Dependencies
-└── server.js          # Main server file
+- Node.js v18+ instalado
+- MongoDB instalado localmente OU conta no MongoDB Atlas
+- npm ou yarn
+
+### Instalação
+
+1. Entre na pasta do backend:
+```bash
+cd backend
 ```
 
-## Installation
-
+2. Instale as dependências:
 ```bash
 npm install
 ```
 
-## Environment Setup
-
-Copy `.env.example` to `.env` and fill in your credentials:
-
+3. Configure as variáveis de ambiente:
 ```bash
 cp .env.example .env
 ```
 
-## Running the Server
+4. Edite o arquivo `.env` com suas credenciais
 
-### Development (with auto-reload)
+5. Inicie o servidor:
+
+**Desenvolvimento:**
 ```bash
 npm run dev
 ```
 
-### Production
+**Produção:**
 ```bash
 npm start
 ```
 
-The server will start on `http://localhost:5000` (or the PORT specified in `.env`)
+O servidor estará rodando em: `http://localhost:5000`
 
-## API Endpoints
+## 📁 Estrutura do Projeto
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/users/profile` - Get user profile
-
-### Products
-- `GET /api/products` - Get all products
-- `GET /api/products/:id` - Get product details
-- `POST /api/products` - Create product (admin)
-- `PUT /api/products/:id` - Update product (admin)
-- `DELETE /api/products/:id` - Delete product (admin)
-
-### Orders
-- `POST /api/orders` - Create order
-- `GET /api/orders` - Get user orders
-- `GET /api/orders/:id` - Get order details
-
-### Payments
-- `POST /api/payments/create-intent` - Create Stripe payment intent
-- `POST /api/payments/webhook` - Stripe webhook handler
-
-### Delivery
-- `GET /api/delivery/address/:cep` - Get address by CEP
-- `POST /api/delivery/calculate` - Calculate shipping cost
-
-## Database
-
-This project uses MongoDB Atlas. Connection string should be in `.env`:
-
-```bash
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
+```
+backend/
+├── config/          # Configurações (database, cloudinary, etc)
+├── models/          # Models do MongoDB (User, Product, Order, etc)
+├── routes/          # Rotas da API
+├── controllers/     # Lógica de negócio
+├── middleware/      # Middlewares (auth, upload, etc)
+├── utils/           # Funções utilitárias
+├── uploads/         # Pasta temporária para uploads
+├── .env             # Variáveis de ambiente (não commitar)
+├── .env.example     # Exemplo de variáveis de ambiente
+├── server.js        # Arquivo principal
+└── package.json
 ```
 
-## Dependencies
+## 🔌 Endpoints da API
 
-- **express**: Web framework
-- **mongoose**: MongoDB ODM
-- **jsonwebtoken**: JWT authentication
-- **bcryptjs**: Password hashing
-- **stripe**: Payment processing
-- **cloudinary**: Image hosting
-- **dotenv**: Environment variable management
+### Autenticação
+- `POST /api/auth/register` - Cadastro de usuário
+- `POST /api/auth/login` - Login
 
-## Security
+### Produtos
+- `GET /api/products` - Listar todos os produtos
+- `GET /api/products/:id` - Buscar produto por ID
+- `POST /api/products` - Criar produto (admin)
+- `PUT /api/products/:id` - Atualizar produto (admin)
+- `DELETE /api/products/:id` - Deletar produto (admin)
 
-- JWT tokens for authentication
-- Password hashing with bcryptjs
-- CORS configuration
-- Input validation with validator
-- API rate limiting (recommended for production)
+### Usuários
+- `GET /api/users/profile` - Perfil do usuário logado
+- `PUT /api/users/profile` - Atualizar perfil
 
-## Troubleshooting
+### Pedidos
+- `GET /api/orders` - Listar pedidos do usuário
+- `POST /api/orders` - Criar novo pedido
+- `GET /api/orders/:id` - Detalhes do pedido
+- `GET /api/admin/orders` - Todos os pedidos (admin)
+- `PUT /api/orders/:id/status` - Atualizar status (admin)
 
-### Port already in use
-Change PORT in `.env` to an available port
+### Cupons
+- `POST /api/coupons/validate` - Validar cupom
+- `GET /api/admin/coupons` - Listar cupons (admin)
+- `POST /api/admin/coupons` - Criar cupom (admin)
 
-### MongoDB connection failed
-Check your MONGODB_URI in `.env`
+## 🔐 Autenticação
 
-### Stripe webhook not working
-Ensure STRIPE_WEBHOOK_SECRET is correct and update webhook URL in Stripe dashboard
+A API usa JWT (JSON Web Tokens) para autenticação. Inclua o token no header:
 
-## Development Notes
+```
+Authorization: Bearer seu_token_aqui
+```
 
-- Use `nodemon` for automatic server restart on file changes
-- Check logs in the terminal for debugging
-- Use Postman or Insomnia to test API endpoints
+## 🛠️ Tecnologias
 
----
+- **Express.js** - Framework web
+- **MongoDB** - Banco de dados
+- **Mongoose** - ODM para MongoDB
+- **JWT** - Autenticação
+- **bcryptjs** - Hash de senhas
+- **Cloudinary** - Upload de imagens
+- **Multer** - Upload de arquivos
 
-For more information, see [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md)
+## 📝 Notas
+
+- Em desenvolvimento, a API aceita requisições de `http://localhost:5173`
+- Em produção, configure o `FRONTEND_URL` no `.env`
+- Sempre use HTTPS em produção
+- Configure rate limiting para evitar abuso da API

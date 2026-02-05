@@ -73,8 +73,9 @@ const Footer = () => {
           {/* Payment Methods */}
           <div className='mb-8'>
             <p className='text-sm font-semibold mb-4'>FORMAS DE PAGAMENTO</p>
-            <div className='flex gap-4 flex-wrap text-gray-400 text-xs'>
+            <div className='flex gap-4 flex-wrap text-gray-400 text-xs items-center'>
               <img src={assets.pix_logo} className='h-6 brightness-0 invert' alt="PIX" />
+              <img src={assets.stripe_logo} className='h-12 brightness-0 invert' alt="Stripe" />
               <span className='px-3 py-1 border border-gray-700 rounded'>Cartão de Crédito</span>
               <span className='px-3 py-1 border border-gray-700 rounded'>Débito</span>
             </div>

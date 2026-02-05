@@ -1,10 +1,12 @@
 import React, { useContext, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
+import { useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
 
 const SearchBar = () => {
 
   const { search, setSearch, showSearch, setShowSearch } = useContext(ShopContext)
+  const navigate = useNavigate()
   const [isClosing, setIsClosing] = useState(false)
 
   const handleClose = () => {
@@ -15,6 +17,19 @@ const SearchBar = () => {
     }, 300)
   }
 
+  const handleSearch = (value) => {
+    setSearch(value)
+  }
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      // Navegar para estoque se houver texto de busca
+      if (search && search.trim()) {
+        navigate('/estoque')
+      }
+    }
+  }
+
   return showSearch ? (
     <div className={`bg-white border-b border-gray-200 ${isClosing ? 'animate-out slide-out-to-top duration-300' : 'animate-in slide-in-from-top duration-300'}`}>
       <div className='flex items-center justify-center gap-4 px-4 py-4 sm:py-6'>
@@ -22,7 +37,8 @@ const SearchBar = () => {
           <img className='w-5 text-gray-500 opacity-70 cursor-pointer hover:scale-120 hover:opacity-100 transition-all duration-200' src={assets.search_icon} alt="search" />
           <input 
             value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
+            onChange={(e) => handleSearch(e.target.value)}
+            onKeyPress={handleKeyPress}
             className='flex-1 outline-none text-base bg-transparent placeholder-gray-400 text-gray-800 font-medium' 
             type="text" 
             placeholder='Procurar por produtos, marcas...'

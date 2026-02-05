@@ -77,7 +77,18 @@ exports.createPreference = async (items, email) => {
 };
 
 exports.verifyWebhookSignature = (req) => {
-  // Implementar verificação de assinatura do Mercado Pago
+  // TODO: Implementar verificação de assinatura do Mercado Pago
+  // Ref: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+  const xSignature = req.headers['x-signature'];
+  const xRequestId = req.headers['x-request-id'];
+  
+  if (!xSignature || !xRequestId) {
+    console.warn('⚠️  Webhook sem assinatura válida');
+    return false;
+  }
+  
+  // Por enquanto, aceita todos para desenvolvimento
+  // Em produção, validar: HMAC-SHA256 do body com secret
   return true;
 };
 

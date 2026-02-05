@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react'
 import Title from '../components/Title'
 import { useContext, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 import { assets } from '../assets/assets'
 import CartTotal from '../components/CartTotal'
 
 const Cart = () => {
 
-  const { products, currency, cartItems, updateQuantity, navigate, calculateShipping, shippingCep } = useContext(ShopContext)
+  const { products, currency, cartItems, updateQuantity, navigate, calculateShipping, shippingCep, applyCoupon, removeCoupon, couponCode } = useContext(ShopContext)
 
   const [cartData, setCartData] = useState([])
   const [cep, setCep] = useState('')
+  const [couponInput, setCouponInput] = useState('')
 
   useEffect(() => {
 
@@ -28,6 +29,10 @@ const Cart = () => {
     }
     setCartData(tempData)
   },[cartItems])
+
+  useEffect(() => {
+    setCouponInput(couponCode || '')
+  }, [couponCode])
 
   const handleCepChange = (e) => {
     let value = e.target.value.replace(/\D/g, '')
@@ -52,16 +57,22 @@ const Cart = () => {
         <Title text1={'SUA'} text2={'SACOLA'} />
       </div>
 
-      <div>
-        {
-          cartData.map((item, index)=>{
+      {cartData.length === 0 ? (
+        <div className='text-center py-20 text-gray-600'>Nenhum produto na sacola</div>
+      ) : (
+        <>
+          <div>
+            {
+              cartData.map((item, index)=>{
             
             const productData = products.find((product)=> product._id === item._id)
 
             return (
               <div key={index} className='py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr} items-center gap-4'>
                 <div className='flex items-start gap-6'>
-                  <img className='w-16 sm:w-20' src={productData.image[0]} alt="" />
+                  <div className='relative overflow-hidden bg-gray-100 rounded-lg w-16 h-16 sm:w-20 sm:h-20'>
+                    <img className='w-full h-full object-cover' src={productData.image[0]} alt="" />
+                  </div>
                   <div>
                     <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
                     <div className='flex flex-center gap-5 mt-2'>
@@ -87,8 +98,10 @@ const Cart = () => {
 
       <div className='flex justify-end my-20'>
         <div className='w-full sm:w-[450px]'>
+          <CartTotal/>
+          
           {/* Cálculo de Frete */}
-          <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+          <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 mt-6'>
             <h3 className='font-semibold text-gray-800 mb-3'>Calcular Frete</h3>
             <div className='flex gap-2'>
               <input
@@ -113,12 +126,44 @@ const Cart = () => {
             )}
           </div>
 
-          <CartTotal/>
+          <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+            <h3 className='font-semibold text-gray-800 mb-3'>Cupom de Desconto</h3>
+            <div className='flex gap-2'>
+              <input
+                type='text'
+                placeholder='Digite o cupom'
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                className='flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black'
+              />
+              {couponCode ? (
+                <button
+                  onClick={removeCoupon}
+                  className='bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 transition-colors'
+                >
+                  Remover
+                </button>
+              ) : (
+                <button
+                  onClick={() => applyCoupon(couponInput)}
+                  className='bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors'
+                >
+                  Aplicar
+                </button>
+              )}
+            </div>
+            {couponCode && (
+              <p className='text-xs text-green-700 mt-2'>Cupom aplicado: {couponCode}</p>
+            )}
+          </div>
+
           <div className='w-full text-end'>
             <button onClick={()=>navigate('/checkout')} className='bg-black text-white text-sm my-8 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors'>Comprar</button>
           </div>
         </div>
       </div>
+        </>
+      )}
       
     </div>
   )

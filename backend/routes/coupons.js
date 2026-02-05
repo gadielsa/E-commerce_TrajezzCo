@@ -1,12 +1,12 @@
-const express = require('express');
+import express from 'express';
+import { protect, adminOnly } from '../middleware/auth.js';
+import { createCoupon, getAllCoupons, validateCoupon, deleteCoupon } from '../controllers/couponController.js';
+
 const router = express.Router();
-const { createCoupon, getCoupons, validateCoupon, applyCoupon, deleteCoupon } = require('../controllers/couponController');
-const auth = require('../middleware/auth');
 
-router.post('/', auth, createCoupon);
-router.get('/', auth, getCoupons);
-router.post('/validate', auth, validateCoupon);
-router.post('/apply', auth, applyCoupon);
-router.delete('/:id', auth, deleteCoupon);
+router.post('/validate', protect, validateCoupon);
+router.get('/admin', protect, adminOnly, getAllCoupons);
+router.post('/admin', protect, adminOnly, createCoupon);
+router.delete('/admin/:id', protect, adminOnly, deleteCoupon);
 
-module.exports = router;
+export default router;

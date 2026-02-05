@@ -1,14 +1,15 @@
-import React, { createContext, useState } from "react";
-import { products } from "../assets/assets";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-
-export const ShopContext = createContext()
+import { productService } from "../services/productService";
+import { ShopContext } from "./ShopContextContext";
+import { couponService } from "../services/couponService";
 
 const ShopContextProvider = (props) => {
 
   const currency = 'R$';
   const delivery_fee = 10;
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
@@ -18,6 +19,8 @@ const ShopContextProvider = (props) => {
   const [shippingState, setShippingState] = useState('');
   const [shippingCountry, setShippingCountry] = useState('Brasil');
   const [shippingAddress, setShippingAddress] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
   const [favorites, setFavorites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('favorites')) || []
@@ -26,6 +29,39 @@ const ShopContextProvider = (props) => {
     }
   })
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await productService.getProducts();
+        const normalizedProducts = (data || []).map((product) => {
+          const images = Array.isArray(product.images)
+            ? product.images
+            : Array.isArray(product.image)
+            ? product.image
+            : product.image
+            ? [product.image]
+            : [];
+
+          return {
+            ...product,
+            image: images,
+            images,
+            bestseller: product.bestseller ?? product.isBestseller ?? false,
+            isAvailable: product.isAvailable ?? product.available ?? true
+          };
+        });
+
+        setProducts(normalizedProducts);
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+        toast.error('Erro ao carregar produtos. Tente novamente.');
+        setProducts([]);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
 
   const addToCart = async (itemId, size) => {
@@ -80,7 +116,7 @@ const ShopContextProvider = (props) => {
       let itemInfo = products.find((product)=> product._id === items)
       for(const item in cartItems[items]) {
         try {
-          if (cartItems[items][item] > 0) {
+          if (cartItems[items][item] > 0 && itemInfo) {
             totalAmount += itemInfo.price * cartItems[items][item]
           }
         } catch {
@@ -390,6 +426,37 @@ const ShopContextProvider = (props) => {
     setShippingCountry('Brasil')
   }
 
+  const applyCoupon = async (code) => {
+    const trimmedCode = (code || '').trim()
+    if (!trimmedCode) {
+      toast.error('Informe um cupom válido')
+      return false
+    }
+
+    try {
+      const amount = getCartAmount()
+      const data = await couponService.validateCoupon(trimmedCode, amount)
+      const discount = data?.discount || 0
+      const appliedCode = data?.coupon?.code || trimmedCode.toUpperCase()
+
+      setCouponCode(appliedCode)
+      setCouponDiscount(discount)
+      toast.success('Cupom aplicado com sucesso!')
+      return true
+    } catch (error) {
+      setCouponCode('')
+      setCouponDiscount(0)
+      toast.error(error.message || 'Erro ao aplicar cupom')
+      return false
+    }
+  }
+
+  const removeCoupon = () => {
+    setCouponCode('')
+    setCouponDiscount(0)
+    toast.info('Cupom removido')
+  }
+
   const value = {
     products, currency, delivery_fee, search, setSearch, showSearch, setShowSearch, 
     cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, navigate, placeOrder,
@@ -397,7 +464,8 @@ const ShopContextProvider = (props) => {
     shippingCost, shippingCep, calculateShipping, resetShipping,
     shippingCity, shippingState, shippingCountry, shippingAddress,
     generatePixPayment, processCreditCardPayment, validateCreditCard, 
-    detectCardBrand, calculateInstallments
+    detectCardBrand, calculateInstallments,
+    couponCode, couponDiscount, applyCoupon, removeCoupon
   }
   
 

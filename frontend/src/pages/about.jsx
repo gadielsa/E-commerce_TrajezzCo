@@ -13,7 +13,7 @@ const About = () => {
         </div>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-8 items-center'>
           <div>
-            <img src={assets.sneaker_example} className='w-full rounded-lg' alt="Sneaker" />
+            <img src={assets.jezz_image} className='w-full rounded-lg' alt="JezzImage" />
           </div>
           <div className='space-y-6'>
             <h2 className='text-3xl font-bold text-gray-900'>Nossa Missão</h2>

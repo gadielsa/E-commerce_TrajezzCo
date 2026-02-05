@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 import { Link } from 'react-router-dom'
 import { assets } from '../assets/assets'
 
@@ -21,9 +21,9 @@ const ProductItem = ({id, image, name, price, bestseller}) => {
         </button>
         <img
           className='w-full h-96 object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out'
-          src={(image && image[0]) ? image[0] : assets.sneaker_example}
+          src={(image && image[0]) ? image[0] : assets.jezz_image}
           alt={name}
-          onError={(e) => { e.target.onerror = null; e.target.src = assets.sneaker_example }}
+          onError={(e) => { e.target.onerror = null; e.target.src = assets.jezz_image }}
           style={{ backgroundColor: '#fff' }}
         />
         {bestseller && (

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { authService } from '../services/authService'
 
 const Login = () => {
 
@@ -11,27 +12,25 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
-    // Simular envio de dados
-    setTimeout(() => {
+    try {
       if (currentState === 'Login') {
-        localStorage.setItem('userEmail', email)
-        localStorage.setItem('userName', email.split('@')[0])
+        await authService.login(email, password)
         toast.success('Login realizado com sucesso!')
-        setLoading(false)
         navigate('/')
       } else {
-        localStorage.setItem('userEmail', email)
-        localStorage.setItem('userName', name)
-        toast.success('Conta criada com sucesso! Faça login.')
-        setCurrentState('Login')
-        setLoading(false)
-        navigate('/login')
+        await authService.register(name, email, password)
+        toast.success('Conta criada com sucesso!')
+        navigate('/')
       }
-    }, 1000)
+    } catch (error) {
+      toast.error(error.message || 'Erro ao processar requisição')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

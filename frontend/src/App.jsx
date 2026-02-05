@@ -10,13 +10,28 @@ import Login from './pages/Login'
 import Profile from './pages/Profile'
 import Favorites from './pages/Favorites'
 import Checkout from './pages/Checkout'
+import ConfirmarPagamento from './pages/ConfirmarPagamento'
 import Orders from './pages/Orders'
+import AdminPanel from './pages/AdminPanel'
 // import Careers from './pages/Careers'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+
+// Componente para proteger rota de admin
+const ProtectedAdminRoute = ({ element }) => {
+  const user = localStorage.getItem('user')
+  const currentUser = user ? JSON.parse(user) : null
+  
+  // Se não há usuário logado ou não é admin, redireciona
+  if (!currentUser || currentUser.role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+  
+  return element
+}
 
 const App = () => {
   return (
@@ -48,7 +63,9 @@ const App = () => {
           <Route path='/perfil' element={<Profile />} />
           <Route path='/favoritos' element={<Favorites />} />
           <Route path='/checkout' element={<Checkout />} />
+          <Route path='/confirmar-pagamento/:orderId' element={<ConfirmarPagamento />} />
           <Route path='/pedidos' element={<Orders />} />
+          <Route path='/admin' element={<ProtectedAdminRoute element={<AdminPanel />} />} />
         </Routes>
       </main>
       

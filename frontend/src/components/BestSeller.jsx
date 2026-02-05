@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/ShopContextContext'
 import Title from './Title'
 import ProductItem from './ProductItem'
 
@@ -9,8 +9,15 @@ const BestSeller = () => {
   const [bestSeller, setBestSeller] = useState([])
 
   useEffect(() => {
-    const bestProduct = products.filter((item) => (item.bestseller))
-    setBestSeller(bestProduct.slice(0, 5))
+    console.log('BestSeller - Produtos recebidos:', products)
+    if (products && Array.isArray(products)) {
+      const bestProduct = products.filter((item) => (item.bestseller))
+      console.log('BestSeller - Produtos bestseller:', bestProduct)
+      setBestSeller(bestProduct.slice(0, 5))
+    } else {
+      console.warn('BestSeller - Produtos inválido ou não array:', products)
+      setBestSeller([])
+    }
   }, [products])
 
   return (

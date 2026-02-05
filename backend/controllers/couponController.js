@@ -1,123 +1,72 @@
-const Coupon = require('../models/Coupon');
+import Coupon from '../models/Coupon.js';
+import Order from '../models/Order.js';
 
-exports.createCoupon = async (req, res) => {
+export const createCoupon = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-
-    const { code, discountType, discountValue, minPurchase, maxUses, expiryDate } = req.body;
-
-    const coupon = new Coupon({
-      code: code.toUpperCase(),
-      discountType,
-      discountValue,
-      minPurchase: minPurchase || 0,
-      maxUses,
-      expiryDate
-    });
-
-    await coupon.save();
-    res.status(201).json({ success: true, data: coupon });
+    const coupon = await Coupon.create({ ...req.body, createdBy: req.user._id });
+    return res.status(201).json({ success: true, message: 'Cupom criado com sucesso', coupon });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(400).json({ success: false, message: error.message || 'Erro ao criar cupom' });
   }
 };
 
-exports.getCoupons = async (req, res) => {
+export const getAllCoupons = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-
-    const coupons = await Coupon.find();
-    res.json({ success: true, data: coupons });
+    const coupons = await Coupon.find().sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: coupons.length, coupons });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message || 'Erro ao buscar cupons' });
   }
 };
 
-exports.validateCoupon = async (req, res) => {
+export const validateCoupon = async (req, res) => {
   try {
     const { code, amount } = req.body;
-
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const coupon = await Coupon.findOne({ code: code?.toUpperCase() });
 
     if (!coupon) {
-      return res.status(404).json({ success: false, message: 'Coupon not found' });
+      return res.status(404).json({ success: false, message: 'Cupom inválido' });
     }
 
-    if (!coupon.isActive) {
-      return res.status(400).json({ success: false, message: 'Coupon is not active' });
+    if (!coupon.isValid()) {
+      return res.status(400).json({ success: false, message: 'Cupom expirado ou inativo' });
     }
 
-    if (coupon.expiryDate && coupon.expiryDate < new Date()) {
-      return res.status(400).json({ success: false, message: 'Coupon has expired' });
+    if (!coupon.canUserUse(req.user._id)) {
+      return res.status(400).json({ success: false, message: 'Limite de uso do cupom atingido' });
     }
 
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-      return res.status(400).json({ success: false, message: 'Coupon usage limit exceeded' });
+    if (coupon.isFirstPurchaseOnly) {
+      const userOrders = await Order.countDocuments({ user: req.user._id });
+      if (userOrders > 0) {
+        return res.status(400).json({ success: false, message: 'Cupom válido apenas para primeira compra' });
+      }
     }
 
-    if (amount < coupon.minPurchase) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Minimum purchase of R$ ${coupon.minPurchase} required` 
-      });
+    if (amount !== undefined) {
+      if (coupon.minPurchaseAmount && amount < coupon.minPurchaseAmount) {
+        return res.status(400).json({ success: false, message: `Valor mínimo para usar o cupom: R$ ${coupon.minPurchaseAmount.toFixed(2)}` });
+      }
+      const discount = coupon.calculateDiscount(amount);
+      return res.status(200).json({ success: true, coupon, discount });
     }
 
-    let discountAmount = 0;
-    if (coupon.discountType === 'percentage') {
-      discountAmount = (amount * coupon.discountValue) / 100;
-    } else {
-      discountAmount = coupon.discountValue;
-    }
-
-    res.json({
-      success: true,
-      isValid: true,
-      discountAmount,
-      couponCode: coupon.code
-    });
+    return res.status(200).json({ success: true, coupon });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message || 'Erro ao validar cupom' });
   }
 };
 
-exports.applyCoupon = async (req, res) => {
+export const deleteCoupon = async (req, res) => {
   try {
-    const { couponId } = req.body;
-
-    const coupon = await Coupon.findById(couponId);
-    if (!coupon) {
-      return res.status(404).json({ success: false, message: 'Coupon not found' });
-    }
-
-    if (!coupon.usedBy.includes(req.user.id)) {
-      coupon.usedBy.push(req.user.id);
-      coupon.usedCount += 1;
-      await coupon.save();
-    }
-
-    res.json({ success: true, message: 'Coupon applied successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.deleteCoupon = async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
+
     if (!coupon) {
-      return res.status(404).json({ success: false, message: 'Coupon not found' });
+      return res.status(404).json({ success: false, message: 'Cupom não encontrado' });
     }
 
-    res.json({ success: true, message: 'Coupon deleted' });
+    return res.status(200).json({ success: true, message: 'Cupom deletado com sucesso' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(400).json({ success: false, message: error.message || 'Erro ao deletar cupom' });
   }
 };

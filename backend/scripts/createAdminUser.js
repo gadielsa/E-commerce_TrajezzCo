@@ -1,0 +1,64 @@
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import User from '../models/User.js';
+
+dotenv.config();
+
+const createAdminUser = async () => {
+  try {
+    // Conectar ao MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ Conectado ao MongoDB');
+
+    // Dados do admin
+    const adminData = {
+      name: 'Administrador',
+      email: 'admin@trajezzco.com',
+      password: 'Admin@123456', // ALTERE ISSO EM PRODUÇÃO
+      role: 'admin'
+    };
+
+    // Verificar se admin já existe
+    const existingAdmin = await User.findOne({ email: adminData.email });
+    if (existingAdmin) {
+      console.log('⚠️  Admin já existe com este email!');
+      if (existingAdmin.role === 'admin') {
+        console.log(`📧 Email: ${existingAdmin.email}`);
+        console.log(`👤 Nome: ${existingAdmin.name}`);
+      }
+      await mongoose.connection.close();
+      return;
+    }
+
+    // Hash da senha
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminData.password, salt);
+
+    // Criar admin
+    const admin = await User.create({
+      name: adminData.name,
+      email: adminData.email,
+      password: hashedPassword,
+      role: 'admin'
+    });
+
+    console.log('✅ Usuário admin criado com sucesso!');
+    console.log('\n📋 Dados de acesso:');
+    console.log(`📧 Email: ${admin.email}`);
+    console.log(`🔐 Senha: ${adminData.password}`);
+    console.log(`👤 Nome: ${admin.name}`);
+    console.log(`🔑 Role: ${admin.role}`);
+    console.log(`📱 ID: ${admin._id}`);
+    console.log('\n⚠️  GUARDE ESSES DADOS COM SEGURANÇA!');
+    console.log('⚠️  Altere a senha assim que fizer login!\n');
+
+    await mongoose.connection.close();
+    console.log('🔌 Conexão fechada');
+  } catch (error) {
+    console.error('❌ Erro:', error.message);
+    process.exit(1);
+  }
+};
+
+createAdminUser();

@@ -1,97 +1,117 @@
-const Product = require('../models/Product');
+import Product from '../models/Product.js';
 
-exports.getProducts = async (req, res) => {
+export const getProducts = async (req, res) => {
   try {
-    const { category, search, bestseller } = req.query;
-    let filter = {};
+    const { category, subCategory, search } = req.query;
+    const filter = {};
 
     if (category) filter.category = category;
-    if (bestseller === 'true') filter.bestseller = true;
+    if (subCategory) filter.subCategory = subCategory;
+
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+      filter.$text = { $search: search };
     }
 
-    const products = await Product.find(filter);
-    res.json({ success: true, data: products });
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: products.length,
+      products
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao buscar produtos'
+    });
   }
 };
 
-exports.getProduct = async (req, res) => {
+export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Produto não encontrado'
+      });
     }
-    res.json({ success: true, data: product });
+
+    return res.status(200).json({
+      success: true,
+      product
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao buscar produto'
+    });
   }
 };
 
-exports.createProduct = async (req, res) => {
+export const createProduct = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
+    const product = await Product.create(req.body);
 
-    const { name, description, price, category, sizes, images } = req.body;
+    return res.status(201).json({
+      success: true,
+      message: 'Produto criado com sucesso',
+      product
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Erro ao criar produto'
+    });
+  }
+};
 
-    const product = new Product({
-      name,
-      description,
-      price,
-      category,
-      sizes: sizes || [],
-      images: images || []
+export const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
     });
 
-    await product.save();
-    res.status(201).json({ success: true, data: product });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.updateProduct = async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updatedAt: Date.now() },
-      { new: true }
-    );
-
     if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Produto não encontrado'
+      });
     }
 
-    res.json({ success: true, data: product });
+    return res.status(200).json({
+      success: true,
+      message: 'Produto atualizado com sucesso',
+      product
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Erro ao atualizar produto'
+    });
   }
 };
 
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-
     const product = await Product.findByIdAndDelete(req.params.id);
+
     if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Produto não encontrado'
+      });
     }
 
-    res.json({ success: true, message: 'Product deleted' });
+    return res.status(200).json({
+      success: true,
+      message: 'Produto deletado com sucesso'
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Erro ao deletar produto'
+    });
   }
 };
