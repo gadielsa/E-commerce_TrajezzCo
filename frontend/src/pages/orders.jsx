@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 import Title from '../components/Title'
 import { toast } from 'react-toastify'
 import { orderService } from '../services/orderService'
+import { trackingService } from '../services/trackingService'
 
 const Orders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [trackingModal, setTrackingModal] = useState({ open: false, tracking: null, order: null, loadingTracking: false })
 
   const fetchOrders = async () => {
     try {
@@ -25,11 +27,33 @@ const Orders = () => {
     fetchOrders()
   }, [])
 
-  const handleTrackOrder = (trackingCode) => {
-    if (trackingCode) {
-      toast.info(`Código de rastreamento: ${trackingCode}`)
-    } else {
-      toast.info('Código de rastreamento ainda não disponível')
+  const handleTrackOrder = async (orderId, trackingCode) => {
+    setTrackingModal(prev => ({ ...prev, open: true, loadingTracking: true }))
+    
+    try {
+      const result = await trackingService.trackOrderAuthenticated(orderId)
+      
+      if (result.success && result.order.tracking) {
+        const formattedTracking = trackingService.formatTrackingInfo(result.order.tracking)
+        setTrackingModal(prev => ({ 
+          ...prev, 
+          tracking: formattedTracking, 
+          order: result.order,
+          loadingTracking: false 
+        }))
+      } else {
+        setTrackingModal(prev => ({ 
+          ...prev, 
+          tracking: null,
+          order: result.order,
+          loadingTracking: false,
+          message: result.order.message || 'Código de rastreamento ainda não disponível'
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao rastrear:', error)
+      toast.error(error.message || 'Erro ao rastrear pedido')
+      setTrackingModal(prev => ({ ...prev, open: false }))
     }
   }
 
@@ -113,11 +137,12 @@ const Orders = () => {
                     <span className={`w-3 h-3 rounded-full ${getStatusColor(order.status)}`}></span>
                     <span className='text-sm font-medium text-gray-700'>{order.status}</span>
                   </div>
-                  {order.trackingCode && (
+                {order.trackingCode && (
                     <button
-                      onClick={() => handleTrackOrder(order.trackingCode)}
-                      className='text-sm text-blue-600 hover:text-blue-800 underline'
+                      onClick={() => handleTrackOrder(order._id, order.trackingCode)}
+                      className='inline-flex items-center gap-2 rounded-full border border-blue-600 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2'
                     >
+                      <span className='h-1.5 w-1.5 rounded-full bg-blue-600'></span>
                       Rastrear Pedido
                     </button>
                   )}
@@ -232,6 +257,73 @@ const Orders = () => {
           ))
         )}
       </div>
+
+      {/* Modal de Rastreamento */}
+      {trackingModal.open && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto'>
+            <div className='sticky top-0 bg-white border-b p-6 flex justify-between items-center'>
+              <h3 className='text-lg font-semibold text-gray-900'>Rastreamento do Pedido</h3>
+              <button
+                onClick={() => setTrackingModal({ ...trackingModal, open: false })}
+                className='text-gray-500 hover:text-gray-700 text-2xl leading-none'
+              >
+                ×
+              </button>
+            </div>
+
+            <div className='p-6'>
+              {trackingModal.loadingTracking ? (
+                <div className='flex justify-center py-8'>
+                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-black'></div>
+                </div>
+              ) : trackingModal.message ? (
+                <div className='bg-blue-50 border border-blue-200 p-4 rounded-lg text-center'>
+                  <p className='text-sm text-blue-800'>{trackingModal.message}</p>
+                  {trackingModal.order?.trackingCode && (
+                    <p className='text-xs text-blue-600 mt-2'>
+                      Código: {trackingModal.order.trackingCode}
+                    </p>
+                  )}
+                </div>
+              ) : trackingModal.tracking && trackingModal.tracking.historico?.length > 0 ? (
+                <div className='space-y-4'>
+                  <div className='mb-4'>
+                    <p className='font-semibold text-gray-900 mb-1'>Status Atual</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(trackingModal.tracking.status)}`}>
+                      {trackingModal.tracking.statusPT}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className='font-semibold text-gray-900 mb-3'>Últimas Atualizações</p>
+                    <div className='space-y-3'>
+                      {trackingModal.tracking.historico.slice(0, 5).map((evento, index) => (
+                        <div key={index} className='flex gap-3 pb-3 border-b border-gray-200 last:border-b-0'>
+                          <div className='flex flex-col items-center'>
+                            <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-black' : 'bg-gray-300'}`}></div>
+                          </div>
+                          <div className='flex-1'>
+                            <p className='font-medium text-gray-900'>{evento.evento}</p>
+                            <p className='text-xs text-gray-600'>{evento.data}</p>
+                            {evento.local && (
+                              <p className='text-xs text-gray-700 mt-1'>📍 {evento.local}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className='text-center text-gray-600'>
+                  <p>Sem informações de rastreamento disponíveis</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

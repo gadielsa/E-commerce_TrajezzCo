@@ -1,13 +1,24 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import Title from './Title'
 import { ShopContext } from '../context/ShopContextContext'
 
 const CartTotal = () => {
 
-  const { currency, shippingCost, getCartAmount, couponCode, couponDiscount } = useContext(ShopContext)
+  const { currency, shippingCost, getCartAmount, couponCode, couponDiscount, shippingCep } = useContext(ShopContext)
+  const [effectiveShippingCost, setEffectiveShippingCost] = useState(shippingCost)
 
   const subtotal = getCartAmount()
-  const total = subtotal === 0 ? 0 : subtotal + shippingCost
+  
+  // Atualizar frete automaticamente baseado no subtotal
+  useEffect(() => {
+    if (subtotal >= 500) {
+      setEffectiveShippingCost(0)
+    } else {
+      setEffectiveShippingCost(shippingCost)
+    }
+  }, [subtotal, shippingCost])
+
+  const total = subtotal === 0 ? 0 : subtotal + effectiveShippingCost
   const discountValue = subtotal === 0 ? 0 : Math.min(couponDiscount || 0, total)
   const totalAfterDiscount = Math.max(0, total - discountValue)
   const discountPix = (total * 0.06).toFixed(2)
@@ -38,7 +49,7 @@ const CartTotal = () => {
                   <span className='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded'>Grátis acima de R$500</span>
                 )}
               </div>
-              <p className='font-semibold'>{currency}{shippingCost.toFixed(2)}</p>
+              <p className='font-semibold'>{currency}{effectiveShippingCost.toFixed(2)}</p>
             </div>
 
             <div className='h-px bg-gray-200'></div>

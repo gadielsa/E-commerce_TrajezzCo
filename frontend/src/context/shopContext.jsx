@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { productService } from "../services/productService";
+import { orderService } from "../services/orderService";
 import { ShopContext } from "./ShopContextContext";
 import { couponService } from "../services/couponService";
+import favoriteService from "../services/favoriteService";
 
 const ShopContextProvider = (props) => {
 
@@ -21,13 +23,8 @@ const ShopContextProvider = (props) => {
   const [shippingAddress, setShippingAddress] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('favorites')) || []
-    } catch {
-      return []
-    }
-  })
+  const [favorites, setFavorites] = useState([])
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -61,7 +58,59 @@ const ShopContextProvider = (props) => {
     };
 
     loadProducts();
+    loadFavorites();
   }, []);
+
+  // Carregar favoritos do banco de dados
+  const loadFavorites = async () => {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      // Se não está logado, carrega do localStorage
+      try {
+        const localFavorites = JSON.parse(localStorage.getItem('favorites')) || []
+        setFavorites(localFavorites)
+      } catch {
+        setFavorites([])
+      }
+      setFavoritesLoaded(true)
+      return
+    }
+
+    try {
+      const response = await favoriteService.getFavorites()
+      
+      if (response.success && response.favorites) {
+        // Extrai apenas os IDs dos produtos
+        const favoriteIds = response.favorites.map(p => p._id)
+        setFavorites(favoriteIds)
+        
+        // Migra favoritos do localStorage para o banco (se houver)
+        const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]')
+        if (localFavorites.length > 0) {
+          const newFavorites = localFavorites.filter(id => !favoriteIds.includes(id))
+          if (newFavorites.length > 0) {
+            await favoriteService.syncFavorites(localFavorites)
+            // Atualiza o estado com os favoritos combinados
+            setFavorites([...favoriteIds, ...newFavorites])
+          }
+          // Remove do localStorage após sincronizar
+          localStorage.removeItem('favorites')
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar favoritos:', error)
+      // Em caso de erro, mantém os favoritos do localStorage
+      try {
+        const localFavorites = JSON.parse(localStorage.getItem('favorites')) || []
+        setFavorites(localFavorites)
+      } catch {
+        setFavorites([])
+      }
+    } finally {
+      setFavoritesLoaded(true)
+    }
+  }
 
 
   const addToCart = async (itemId, size) => {
@@ -127,35 +176,77 @@ const ShopContextProvider = (props) => {
     return totalAmount
   }
 
-  const placeOrder = (deliveryInfo, paymentDetails = null) => {
-    let finalAmount = getCartAmount() + shippingCost
-    
-    // Aplica desconto de 6% para PIX
-    if (deliveryInfo.method === 'pix') {
-      finalAmount = finalAmount * 0.94 // 6% de desconto
+  // Função auxiliar para obter o frete efetivo (considera frete grátis >= R$500)
+  const getEffectiveShippingCost = (subtotal) => {
+    return subtotal >= 500 ? 0 : shippingCost
+  }
+
+  const placeOrder = async (deliveryInfo, paymentDetails = null) => {
+    try {
+      const subtotal = getCartAmount()
+      const effectiveShipping = getEffectiveShippingCost(subtotal)
+      let finalAmount = subtotal + effectiveShipping
+      
+      // Aplica desconto de 6% para PIX
+      if (deliveryInfo.method === 'pix') {
+        finalAmount = finalAmount * 0.94 // 6% de desconto
+      }
+
+      // Preparar itens para envio à API
+      const items = []
+      for (const itemId in cartItems) {
+        const product = products.find(p => p._id === itemId)
+        if (product) {
+          for (const size in cartItems[itemId]) {
+            const quantity = cartItems[itemId][size]
+            if (quantity > 0) {
+              items.push({
+                product: itemId,
+                name: product.name,
+                price: product.price,
+                size: size,
+                quantity: quantity,
+                image: product.image?.[0] || ''
+              })
+            }
+          }
+        }
+      }
+      
+      // Remover o campo 'method' de deliveryInfo pois não faz parte do schema
+      const cleanDeliveryInfo = { ...deliveryInfo }
+      delete cleanDeliveryInfo.method
+      
+      const orderPayload = {
+        items: items,
+        deliveryInfo: cleanDeliveryInfo,
+        paymentMethod: deliveryInfo.method,
+        paymentDetails: paymentDetails,
+        subtotal: subtotal,
+        shippingCost: effectiveShipping,
+        discount: 0,
+        couponCode: couponCode || '',
+        totalAmount: finalAmount
+      }
+
+      // Criar pedido na API
+      const response = await orderService.createOrder(orderPayload)
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao criar pedido')
+      }
+
+      const orderData = response.order
+      
+      setCartItems({})
+      resetShipping()
+      
+      return orderData
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error)
+      toast.error(error.message || 'Erro ao criar pedido')
+      throw error
     }
-    
-    const orderData = {
-      orderId: Date.now(),
-      date: new Date().toLocaleDateString('pt-BR'),
-      items: cartItems,
-      deliveryInfo: deliveryInfo,
-      paymentMethod: deliveryInfo.method,
-      paymentDetails: paymentDetails,
-      subtotal: getCartAmount(),
-      shippingCost: shippingCost,
-      totalAmount: finalAmount,
-      status: deliveryInfo.method === 'pix' ? 'Aguardando pagamento' : 'Pagamento aprovado'
-    }
-    
-    let orders = JSON.parse(localStorage.getItem('orders')) || []
-    orders.push(orderData)
-    localStorage.setItem('orders', JSON.stringify(orders))
-    
-    setCartItems({})
-    resetShipping()
-    
-    return orderData
   }
 
   // Gera código PIX
@@ -206,33 +297,67 @@ const ShopContextProvider = (props) => {
     
     for (let i = cardNumber.length - 1; i >= 0; i--) {
       let digit = parseInt(cardNumber[i])
-      
+
       if (isEven) {
         digit *= 2
         if (digit > 9) {
           digit -= 9
         }
       }
-      
+
       sum += digit
       isEven = !isEven
     }
-    
+
     return sum % 10 === 0
   }
 
-  // Detecta bandeira do cartão
-  const detectCardBrand = (cardNumber) => {
-    const number = cardNumber.replace(/\s/g, '')
-    
-    if (/^4/.test(number)) return 'Visa'
-    if (/^5[1-5]/.test(number)) return 'Mastercard'
-    if (/^3[47]/.test(number)) return 'American Express'
-    if (/^6(?:011|5)/.test(number)) return 'Discover'
-    if (/^(606282|3841)/.test(number)) return 'Hipercard'
-    if (/^(636368|438935|504175|451416|636297)/.test(number)) return 'Elo'
-    
+  const detectCardBrand = (number) => {
+    const cleanNumber = (number || '').replace(/\s/g, '')
+
+    if (/^4/.test(cleanNumber)) return 'Visa'
+    if (/^5[1-5]/.test(cleanNumber)) return 'Mastercard'
+    if (/^3[47]/.test(cleanNumber)) return 'American Express'
+    if (/^6(?:011|5)/.test(cleanNumber)) return 'Discover'
+    if (/^(606282|3841)/.test(cleanNumber)) return 'Hipercard'
+    if (/^(636368|438935|504175|451416|636297)/.test(cleanNumber)) return 'Elo'
+
     return 'Desconhecida'
+  }
+
+  const toggleFavorite = async (itemId) => {
+    const token = localStorage.getItem('token')
+
+    // Atualiza o estado local imediatamente para melhor UX
+    const isCurrentlyFavorite = favorites.includes(itemId)
+    let newFavorites
+
+    if (isCurrentlyFavorite) {
+      newFavorites = favorites.filter(id => id !== itemId)
+    } else {
+      newFavorites = [...favorites, itemId]
+    }
+
+    setFavorites(newFavorites)
+
+    // Se esta logado, sincroniza com o banco
+    if (token) {
+      try {
+        if (isCurrentlyFavorite) {
+          await favoriteService.removeFavorite(itemId)
+        } else {
+          await favoriteService.addFavorite(itemId)
+        }
+      } catch (error) {
+        // Se falhar, reverte o estado local
+        setFavorites(favorites)
+        toast.error('Erro ao atualizar favoritos')
+        console.error('Erro ao atualizar favoritos:', error)
+      }
+    } else {
+      // Se nao esta logado, salva no localStorage
+      localStorage.setItem('favorites', JSON.stringify(newFavorites))
+    }
   }
 
   // Calcula parcelas
@@ -269,17 +394,6 @@ const ShopContextProvider = (props) => {
     return installments
   }
 
-  const toggleFavorite = (itemId) => {
-    let favs = structuredClone(favorites)
-    if (favs.includes(itemId)) {
-      favs = favs.filter(id => id !== itemId)
-    } else {
-      favs.push(itemId)
-    }
-    setFavorites(favs)
-    localStorage.setItem('favorites', JSON.stringify(favs))
-  }
-
   const isFavorite = (itemId) => {
     return favorites.includes(itemId)
   }
@@ -298,6 +412,8 @@ const ShopContextProvider = (props) => {
     }
 
     try {
+      console.log(`🚚 Iniciando cálculo de frete para CEP: ${cleanCep}`)
+
       // PASSO 1: Validar CEP com ViaCEP (API gratuita)
       const cepResponse = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
       const cepData = await cepResponse.json()
@@ -307,12 +423,7 @@ const ShopContextProvider = (props) => {
         return
       }
 
-      // Extrai e armazena dados do endereço do ViaCEP
-      // Estrutura do ViaCEP:
-      // - logradouro: rua/avenida
-      // - bairro: bairro
-      // - localidade: cidade
-      // - uf: estado (sigla)
+      // Armazena dados do endereço
       const city = cepData.localidade || ''
       const state = cepData.uf || ''
       const address = cepData.logradouro || ''
@@ -326,94 +437,90 @@ const ShopContextProvider = (props) => {
       
       // Se compra >= R$500, frete grátis
       if (subtotal >= 500) {
+        console.log('✅ Frete grátis: Compra acima de R$ 500')
         setShippingCost(0)
         setShippingCep(cep)
         return
       }
 
-      // PASSO 2: Calcular frete com Melhor Envio
-      // IMPORTANTE: Para usar em produção, você precisa:
-      // 1. Criar conta em https://melhorenvio.com.br
-      // 2. Ir em: Configurações > Desenvolvedores > Gerar Token
-      // 3. Substituir 'SEU_TOKEN_AQUI' pelo seu token real
-      // 4. Configurar o CEP de origem da sua loja
-      
-      const MELHOR_ENVIO_TOKEN = 'SEU_TOKEN_AQUI' // SUBSTITUA PELO SEU TOKEN
-      const CEP_ORIGEM = '92518604' // SUBSTITUA PELO CEP DA SUA LOJA
-      
-      // Enquanto não tiver token, usa simulação
-      if (MELHOR_ENVIO_TOKEN === 'SEU_TOKEN_AQUI') {
-        // SIMULAÇÃO (REMOVER QUANDO INTEGRAR COM MELHOR ENVIO)
-        const region = parseInt(cleanCep.substring(0, 2))
-        let cost = 0
-        
-        if (region >= 1 && region <= 19) {
-          cost = 15 // Sudeste
-        } else if (region >= 20 && region <= 28) {
-          cost = 18 // Rio de Janeiro/Espírito Santo
-        } else if (region >= 40 && region <= 48) {
-          cost = 25 // Sul
-        } else if (region >= 50 && region <= 65) {
-          cost = 30 // Nordeste
-        } else if (region >= 69 && region <= 76) {
-          cost = 35 // Norte
-        } else {
-          cost = 28 // Centro-Oeste
+      // PASSO 2: Preparar dados dos produtos
+      const cartProductsArray = []
+      for (const itemId in cartItems) {
+        const product = products.find(p => p._id === itemId)
+        if (product) {
+          for (const size in cartItems[itemId]) {
+            const quantity = cartItems[itemId][size]
+            if (quantity > 0) {
+              cartProductsArray.push({
+                nome: product.name,
+                preço: product.price,
+                quantidade: quantity,
+                peso: 0.3, // kg padrão
+                altura: 10,
+                largura: 15,
+                comprimento: 20
+              })
+            }
+          }
         }
-        
-        setShippingCost(cost)
-        setShippingCep(cep)
+      }
+
+      if (cartProductsArray.length === 0) {
+        toast.error('Carrinho vazio')
         return
       }
 
-      // INTEGRAÇÃO REAL COM MELHOR ENVIO
-      const shippingResponse = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
+      console.log(`📦 Produtos para cálculo: ${cartProductsArray.length} itens`)
+
+      // PASSO 3: Chamar API do backend para calcular frete
+      const API_URL = typeof window !== 'undefined' ? window.location.origin.includes('localhost') 
+        ? 'http://localhost:5000'
+        : window.location.protocol + '//' + window.location.host.replace(':5173', ':5000')
+        : 'http://localhost:5000'
+
+      console.log(`🔗 Chamando API em: ${API_URL}/api/shipping/calcular`)
+
+      const shippingResponse = await fetch(`${API_URL}/api/shipping/calcular`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${MELHOR_ENVIO_TOKEN}`
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
-          from: {
-            postal_code: CEP_ORIGEM
-          },
-          to: {
-            postal_code: cleanCep
-          },
-          package: {
-            height: 10,    // altura em cm (ajuste conforme seus produtos)
-            width: 20,     // largura em cm
-            length: 30,    // comprimento em cm
-            weight: 1      // peso em kg
-          }
+          cepDestino: cleanCep,
+          produtos: cartProductsArray
         })
       })
 
       if (!shippingResponse.ok) {
-        throw new Error('Erro ao consultar frete')
+        const errorData = await shippingResponse.json()
+        throw new Error(errorData.message || 'Erro ao consultar frete')
       }
 
       const shippingData = await shippingResponse.json()
       
+      if (!shippingData.success || !shippingData.cotacoes || shippingData.cotacoes.length === 0) {
+        throw new Error('Nenhuma opção de frete disponível')
+      }
+
       // Procura pelo PAC (mais econômico) ou SEDEX
-      const pacShipping = shippingData.find(s => s.company.name === 'Correios' && s.name === 'PAC')
-      const sedexShipping = shippingData.find(s => s.company.name === 'Correios' && s.name === 'SEDEX')
+      const pacShipping = shippingData.cotacoes.find(s => s.nome?.includes('PAC'))
+      const sedexShipping = shippingData.cotacoes.find(s => s.nome?.includes('SEDEX'))
       
       // Usa PAC se disponível, senão SEDEX, senão o primeiro disponível
-      const selectedShipping = pacShipping || sedexShipping || shippingData[0]
+      const selectedShipping = pacShipping || sedexShipping || shippingData.cotacoes[0]
       
       if (selectedShipping) {
-        setShippingCost(selectedShipping.price)
+        console.log(`✅ Frete selecionado: ${selectedShipping.servicoCompleto} - R$ ${selectedShipping.preco.toFixed(2)}`)
+        setShippingCost(selectedShipping.preco)
       } else {
-        toast.error('Nenhuma opção de frete disponível')
-        return
+        throw new Error('Nenhuma opção de frete disponível')
       }
       
       setShippingCep(cep)
     } catch (error) {
-      console.error('Erro ao calcular frete:', error)
-      toast.error('Erro ao calcular frete. Tente novamente.')
+      console.error('❌ Erro ao calcular frete:', error)
+      toast.error(error.message || 'Erro ao calcular frete. Tente novamente.')
     }
   }
 
@@ -460,8 +567,8 @@ const ShopContextProvider = (props) => {
   const value = {
     products, currency, delivery_fee, search, setSearch, showSearch, setShowSearch, 
     cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, navigate, placeOrder,
-    favorites, toggleFavorite, isFavorite, getFavorites,
-    shippingCost, shippingCep, calculateShipping, resetShipping,
+    favorites, toggleFavorite, isFavorite, getFavorites, loadFavorites,
+    shippingCost, shippingCep, calculateShipping, resetShipping, getEffectiveShippingCost,
     shippingCity, shippingState, shippingCountry, shippingAddress,
     generatePixPayment, processCreditCardPayment, validateCreditCard, 
     detectCardBrand, calculateInstallments,

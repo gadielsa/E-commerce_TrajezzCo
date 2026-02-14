@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
+import { rastrearEnvio } from '../services/shippingService.js';
 
 export const createOrder = async (req, res) => {
   try {
@@ -147,5 +148,91 @@ export const updateOrderPayment = async (req, res) => {
     return res.status(200).json({ success: true, message: 'Pagamento atualizado', order });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message || 'Erro ao atualizar pagamento' });
+  }
+};
+
+export const trackOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Pedido não encontrado' });
+    }
+
+    // Verifica permissão: deve ser o próprio usuário ou admin
+    if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Acesso negado' });
+    }
+
+    // Se não tem tracking code, retorna just o status do pedido
+    if (!order.trackingCode) {
+      return res.status(200).json({ 
+        success: true, 
+        order: {
+          orderNumber: order.orderNumber,
+          status: order.status,
+          statusHistory: order.statusHistory,
+          trackingCode: null,
+          message: 'Código de rastreamento ainda não disponível'
+        }
+      });
+    }
+
+    // Buscar rastreamento na API Melhor Envio
+    const trackingInfo = await rastrearEnvio(order.trackingCode);
+
+    return res.status(200).json({ 
+      success: true, 
+      order: {
+        orderNumber: order.orderNumber,
+        status: order.status,
+        statusHistory: order.statusHistory,
+        trackingCode: order.trackingCode,
+        tracking: trackingInfo
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Erro ao rastrear pedido' });
+  }
+};
+
+export const trackOrderPublic = async (req, res) => {
+  try {
+    const { orderNumber, trackingCode } = req.body;
+
+    if (!orderNumber || !trackingCode) {
+      return res.status(400).json({ success: false, message: 'Número do pedido e código de rastreamento são obrigatórios' });
+    }
+
+    const order = await Order.findOne({ 
+      orderNumber: orderNumber,
+      trackingCode: trackingCode
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Pedido não encontrado. Verifique os dados.' });
+    }
+
+    // Buscar rastreamento na API Melhor Envio
+    const trackingInfo = await rastrearEnvio(trackingCode);
+
+    return res.status(200).json({ 
+      success: true, 
+      order: {
+        orderNumber: order.orderNumber,
+        status: order.status,
+        statusHistory: order.statusHistory,
+        deliveryInfo: {
+          city: order.deliveryInfo.city,
+          state: order.deliveryInfo.state,
+          address: `${order.deliveryInfo.address}, ${order.deliveryInfo.number}`
+        },
+        trackingCode: order.trackingCode,
+        tracking: trackingInfo
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Erro ao rastrear pedido' });
   }
 };

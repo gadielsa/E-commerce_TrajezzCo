@@ -39,7 +39,7 @@ const Footer = () => {
               <li><a href='#' className='hover:text-white transition-colors'>Termos de Uso</a></li>
               <li><a href='#' className='hover:text-white transition-colors'>Trocas e Devoluções</a></li>
               <li><a href='#' className='hover:text-white transition-colors'>Frete</a></li>
-              <li><a href='#' className='hover:text-white transition-colors'>Rastreamento</a></li>
+              <li><Link to='/rastreamento' onClick={scrollToTop} className='hover:text-white transition-colors'>Rastreamento</Link></li>
             </ul>
           </div>
 

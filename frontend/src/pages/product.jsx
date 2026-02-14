@@ -3,11 +3,12 @@ import { useParams } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContextContext'
 import RelatedProducts from '../components/RelatedProducts'
 import { assets } from '../assets/assets'
+import { toast } from 'react-toastify'
 
 const Product = () => {
 
   const {productId} = useParams()
-  const {products, currency, addToCart, toggleFavorite, isFavorite} = useContext(ShopContext)
+  const {products, currency, addToCart, toggleFavorite, isFavorite, navigate} = useContext(ShopContext)
   const [productData, setProductData] = useState(false)
   const [image, setImage] = useState('')
   const [size, setSize] = useState('')
@@ -106,7 +107,14 @@ const Product = () => {
         
         <div className='flex flex-col sm:flex-row gap-3 mb-8 items-stretch'>
           <button
-            onClick={()=>addToCart(productData._id, size)}
+            onClick={() => {
+              if (!size) {
+                toast.error('Por favor, selecione um tamanho')
+                return
+              }
+              addToCart(productData._id, size)
+              navigate('/sacola')
+            }}
             disabled={productData.isAvailable === false}
             className={`flex-1 px-8 py-3 rounded-lg text-sm font-semibold transition-all active:scale-95 ${productData.isAvailable === false ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800'}`}
           >

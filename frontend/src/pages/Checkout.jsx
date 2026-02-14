@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react'
+import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
 import { assets } from '../assets/assets'
@@ -23,27 +24,29 @@ const Checkout = () => {
   const [phone, setPhone] = useState('');
   
   // Estados para pagamento com cartão
-  const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
   const [installments, setInstallments] = useState(1);
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixData, setPixData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [stripeError, setStripeError] = useState('');
+
+  const stripe = useStripe();
+  const elements = useElements();
 
   const {navigate, cartItems, placeOrder, shippingCep, shippingCity, shippingState, shippingAddress, 
-    generatePixPayment, calculateInstallments, getCartAmount, shippingCost,
-    detectCardBrand} = useContext(ShopContext);
+    generatePixPayment, calculateInstallments, getCartAmount, getEffectiveShippingCost} = useContext(ShopContext);
 
   // Calcula opções de parcelamento
   const installmentOptions = useMemo(() => {
-    const totalAmount = getCartAmount() + shippingCost;
+    const subtotal = getCartAmount();
+    const effectiveShipping = getEffectiveShippingCost(subtotal);
+    const totalAmount = subtotal + effectiveShipping;
     if (!totalAmount || totalAmount <= 0) {
       return [{ number: 1, label: 'À vista', value: 0, total: 0, interest: false }];
     }
     return calculateInstallments(totalAmount);
-  }, [getCartAmount, shippingCost, calculateInstallments]);
+  }, [getCartAmount, getEffectiveShippingCost, calculateInstallments]);
 
   // Preenche os dados automaticamente quando vem do carrinho
   useEffect(() => {
@@ -92,20 +95,14 @@ const Checkout = () => {
     fillFromProfile();
   }, []);
 
-  // Formata número do cartão
-  const formatCardNumber = (value) => {
-    const cleaned = value.replace(/\s/g, '');
-    const chunks = cleaned.match(/.{1,4}/g);
-    return chunks ? chunks.join(' ') : cleaned;
-  };
-
-  // Formata data de validade
-  const formatExpiry = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-    }
-    return cleaned;
+  const normalizeCountryCode = (value) => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const lower = trimmed.toLowerCase();
+    if (lower === 'brasil' || lower === 'brazil' || lower === 'br') return 'BR';
+    if (trimmed.length === 2) return trimmed.toUpperCase();
+    return undefined;
   };
 
   const formatZipCode = (value) => {
@@ -146,7 +143,7 @@ const Checkout = () => {
       lastName,
       email,
       address,
-      addressNumber,
+      number: addressNumber,
       city,
       state,
       zipCode,
@@ -158,7 +155,9 @@ const Checkout = () => {
     try {
       // Processa pagamento com PIX
       if (method === 'pix') {
-        const totalAmount = getCartAmount() + shippingCost;
+        const subtotal = getCartAmount();
+        const effectiveShipping = getEffectiveShippingCost(subtotal);
+        const totalAmount = subtotal + effectiveShipping;
         const pixAmount = totalAmount * 0.94; // 6% de desconto
         const orderData = await placeOrder(deliveryInfo, null, { clearCart: false, toastOnSuccess: false });
         
@@ -173,55 +172,96 @@ const Checkout = () => {
       
       // Processa pagamento com cartão de crédito
       if (method === 'cc') {
-        if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
-          toast.error('Por favor, preencha todos os dados do cartão');
+        setStripeError('');
+        if (!stripe || !elements) {
+          toast.error('Stripe ainda não está pronto. Tente novamente.');
           setIsProcessing(false);
           return;
         }
-        
+
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          toast.error('Não foi possível carregar o formulário do cartão.');
+          setIsProcessing(false);
+          return;
+        }
+
         // 1. Cria o pedido no backend (sem limpar carrinho)
         const orderData = await placeOrder(deliveryInfo, null, { clearCart: false, toastOnSuccess: false });
         const orderId = orderData._id;
-        const totalAmount = getCartAmount() + shippingCost;
-        
-        // 2. Cria PaymentIntent no backend
+        const subtotal = getCartAmount();
+        const effectiveShipping = getEffectiveShippingCost(subtotal);
+        const totalAmount = subtotal + effectiveShipping;
+
+        // 2. Cria PaymentIntent no backend (valor em reais)
         const paymentIntentData = await paymentService.createPaymentIntent(
-          Math.round(totalAmount * 100), // Stripe usa centavos
+          totalAmount,
           `Pedido ${orderData.orderNumber}`,
           orderId
         );
-        
+
         if (!paymentIntentData.clientSecret) {
           throw new Error('Falha ao criar intenção de pagamento');
         }
-        
-        // 3. Redireciona para página de confirmação de pagamento com Stripe
-        // (em produção, usar Stripe Elements ou Stripe.js para tokenização segura)
-        const paymentDetails = {
-          transactionId: paymentIntentData.id,
-          cardBrand: detectCardBrand(cardNumber),
-          lastDigits: cardNumber.slice(-4),
-          installments: installments
-        };
-        
-        // 4. Atualiza pedido com informações de pagamento
+
+        const billingCountry = normalizeCountryCode(country);
+        const { error: stripeConfirmError, paymentIntent } = await stripe.confirmCardPayment(
+          paymentIntentData.clientSecret,
+          {
+            payment_method: {
+              card: cardElement,
+              billing_details: {
+                name: cardName || `${firstName} ${lastName}`.trim(),
+                email,
+                phone,
+                address: {
+                  line1: `${address}, ${addressNumber}`,
+                  city,
+                  state,
+                  postal_code: zipCode,
+                  country: billingCountry
+                }
+              }
+            }
+          }
+        );
+
+        if (stripeConfirmError) {
+          setStripeError(stripeConfirmError.message || 'Pagamento nao autorizado');
+          await orderService.updateOrderPayment(
+            orderId,
+            {
+              transactionId: paymentIntentData.paymentIntentId,
+              installments
+            },
+            'failed',
+            'Pagamento nao autorizado'
+          );
+          toast.error(stripeConfirmError.message || 'Pagamento nao autorizado');
+          return;
+        }
+
+        const paymentStatus = paymentIntent?.status || 'processing';
+        const resolvedStatus = paymentStatus === 'succeeded' ? 'paid' : 'pending';
+        const statusLabel = paymentStatus === 'succeeded' ? 'Pagamento aprovado' : 'Aguardando confirmacao de pagamento';
+
         await orderService.updateOrderPayment(
           orderId,
-          paymentDetails,
-          'pending',
-          'Aguardando confirmação de pagamento'
+          {
+            transactionId: paymentIntent?.id || paymentIntentData.paymentIntentId,
+            installments
+          },
+          resolvedStatus,
+          statusLabel
         );
-        
-        // 5. Salva informações da intenção de pagamento para o cliente
-        sessionStorage.setItem('paymentIntent', JSON.stringify({
-          clientSecret: paymentIntentData.clientSecret,
-          orderId: orderId,
-          amount: totalAmount
-        }));
-        
-        // 6. Redireciona para página de confirmação/autenticação
-        navigate(`/confirmar-pagamento/${orderId}`);
-        toast.info('Redirecionando para confirmação de pagamento...');
+
+        if (paymentStatus === 'succeeded') {
+          toast.success('Pagamento confirmado com sucesso!');
+          navigate('/pedidos');
+        } else {
+          toast.info('Pagamento em processamento. Avisaremos quando confirmar.');
+          navigate('/pedidos');
+        }
       }
     } catch (error) {
       toast.error(error.message || 'Erro ao processar pagamento');
@@ -357,21 +397,6 @@ const Checkout = () => {
               <h3 className='text-lg font-bold text-gray-900 mb-4'>Dados do Cartão</h3>
               
               <div className='mb-4'>
-                <label className='block text-sm font-medium text-gray-700 mb-2'>Número do Cartão</label>
-                <input 
-                  value={cardNumber} 
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  maxLength={19}
-                  className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' 
-                  type="text" 
-                  placeholder='0000 0000 0000 0000' 
-                />
-                {cardNumber && detectCardBrand && (
-                  <p className='text-sm text-gray-600 mt-1'>Bandeira: {detectCardBrand(cardNumber)}</p>
-                )}
-              </div>
-
-              <div className='mb-4'>
                 <label className='block text-sm font-medium text-gray-700 mb-2'>Nome no Cartão</label>
                 <input 
                   value={cardName} 
@@ -382,29 +407,33 @@ const Checkout = () => {
                 />
               </div>
 
-              <div className='grid grid-cols-2 gap-4 mb-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-2'>Validade</label>
-                  <input 
-                    value={cardExpiry} 
-                    onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                    maxLength={5}
-                    className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' 
-                    type="text" 
-                    placeholder='MM/AA' 
+              <div className='mb-4'>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>Dados do Cartão</label>
+                <div className='w-full border border-gray-300 rounded-lg py-3 px-4 focus-within:ring-2 focus-within:ring-black'>
+                  <CardElement
+                    onChange={(event) => {
+                      if (event.error) {
+                        setStripeError(event.error.message || 'Dados do cartao invalidos');
+                      } else if (stripeError) {
+                        setStripeError('');
+                      }
+                    }}
+                    options={{
+                      hidePostalCode: true,
+                      style: {
+                        base: {
+                          fontSize: '16px',
+                          color: '#111827',
+                          '::placeholder': { color: '#9ca3af' }
+                        },
+                        invalid: { color: '#dc2626' }
+                      }
+                    }}
                   />
                 </div>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-2'>CVV</label>
-                  <input 
-                    value={cardCvv} 
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    maxLength={4}
-                    className='w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-black' 
-                    type="text" 
-                    placeholder='000' 
-                  />
-                </div>
+                {stripeError && (
+                  <p className='text-sm text-red-600 mt-2'>{stripeError}</p>
+                )}
               </div>
 
               <div className='mb-4'>

@@ -4,6 +4,7 @@ import { useContext, useState } from 'react'
 import { ShopContext } from '../context/ShopContextContext'
 import { assets } from '../assets/assets'
 import CartTotal from '../components/CartTotal'
+import { toast } from 'react-toastify'
 
 const Cart = () => {
 
@@ -33,6 +34,14 @@ const Cart = () => {
   useEffect(() => {
     setCouponInput(couponCode || '')
   }, [couponCode])
+
+  const handleCheckout = () => {
+    if (!shippingCep) {
+      toast.error('Por favor, calcule o frete antes de continuar')
+      return
+    }
+    navigate('/checkout')
+  }
 
   const handleCepChange = (e) => {
     let value = e.target.value.replace(/\D/g, '')
@@ -158,7 +167,7 @@ const Cart = () => {
           </div>
 
           <div className='w-full text-end'>
-            <button onClick={()=>navigate('/checkout')} className='bg-black text-white text-sm my-8 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors'>Comprar</button>
+            <button onClick={handleCheckout} className='bg-black text-white text-sm my-8 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors'>Comprar</button>
           </div>
         </div>
       </div>

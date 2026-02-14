@@ -62,6 +62,7 @@ import userRoutes from './routes/users.js';
 import uploadRoutes from './routes/upload.js';
 import paymentRoutes from './routes/payments.js';
 import shippingRoutes from './routes/shipping.js';
+import contactRoutes from './routes/contact.js';
 
 // Usar rotas
 app.use('/api/products', productRoutes);
@@ -72,6 +73,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Middleware de erro 404
 app.use((req, res, next) => {

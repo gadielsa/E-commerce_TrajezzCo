@@ -13,11 +13,15 @@ const createAdminUser = async () => {
 
     // Dados do admin
     const adminData = {
-      name: 'Administrador',
-      email: 'admin@trajezzco.com',
-      password: 'Admin@123456', // ALTERE ISSO EM PRODUÇÃO
-      role: 'admin'
+      name: process.env.ADMIN_NAME,
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD,
+      role: process.env.ADMIN_ROLE || 'admin'
     };
+
+    if (!adminData.name || !adminData.email || !adminData.password) {
+      throw new Error('Defina ADMIN_NAME, ADMIN_EMAIL e ADMIN_PASSWORD no ambiente antes de executar.');
+    }
 
     // Verificar se admin já existe
     const existingAdmin = await User.findOne({ email: adminData.email });
@@ -46,7 +50,7 @@ const createAdminUser = async () => {
     console.log('✅ Usuário admin criado com sucesso!');
     console.log('\n📋 Dados de acesso:');
     console.log(`📧 Email: ${admin.email}`);
-    console.log(`🔐 Senha: ${adminData.password}`);
+    console.log('🔐 Senha: (oculta, definida em ADMIN_PASSWORD)');
     console.log(`👤 Nome: ${admin.name}`);
     console.log(`🔑 Role: ${admin.role}`);
     console.log(`📱 ID: ${admin._id}`);

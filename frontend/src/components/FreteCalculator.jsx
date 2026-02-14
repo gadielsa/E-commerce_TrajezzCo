@@ -25,7 +25,7 @@ const FreteCalculator = ({ produtos, onFreteSelected, className = '' }) => {
     const cepLimpo = cep.replace(/\D/g, '');
 
     if (cepLimpo.length !== 8) {
-      setError('Digite um CEP válido');
+      setError('Digite um CEP válido (8 dígitos)');
       return;
     }
 
@@ -40,19 +40,53 @@ const FreteCalculator = ({ produtos, onFreteSelected, className = '' }) => {
     setSelectedFrete(null);
 
     try {
-      const resultado = await calcularFrete(cepLimpo, produtos);
+      // Chamar API do backend
+      const API_URL = typeof window !== 'undefined' ? window.location.origin.includes('localhost') 
+        ? 'http://localhost:5000'
+        : window.location.protocol + '//' + window.location.host.replace(':5173', ':5000')
+        : 'http://localhost:5000';
 
-      if (resultado.success && resultado.cotacoes) {
-        setCotacoes(resultado.cotacoes);
+      console.log('🚚 Calculando frete...');
+
+      const resultado = await fetch(`${API_URL}/api/shipping/calcular`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          cepDestino: cepLimpo,
+          produtos: produtos.map(item => ({
+            nome: item.name,
+            preco: item.price,
+            quantidade: item.quantity || 1,
+            peso: item.weight || 0.3,
+            altura: item.height || 10,
+            largura: item.width || 15,
+            comprimento: item.length || 20
+          }))
+        })
+      });
+
+      if (!resultado.ok) {
+        const errorData = await resultado.json();
+        throw new Error(errorData.message || 'Erro ao calcular frete');
+      }
+
+      const data = await resultado.json();
+
+      if (data.success && data.cotacoes && data.cotacoes.length > 0) {
+        setCotacoes(data.cotacoes);
         
-        if (resultado.metadata?.modo === 'ficticio') {
-          setError('⚠️ Valores fictícios - Configure Melhor Envio API');
+        if (data.metadata?.modo === 'ficticio') {
+          setError('⚠️ Valores de teste - Configure token real do Melhor Envio');
         }
       } else {
-        setError('Nenhuma opção de frete disponível');
+        setError('Nenhuma opção de frete disponível para este CEP');
       }
     } catch (err) {
-      setError(err.message);
+      console.error('❌ Erro:', err);
+      setError(err.message || 'Erro ao calcular frete');
     } finally {
       setLoading(false);
     }

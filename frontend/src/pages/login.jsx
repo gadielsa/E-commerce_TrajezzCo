@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { authService } from '../services/authService'
+import { ShopContext } from '../context/ShopContextContext'
 
 const Login = () => {
 
   const navigate = useNavigate()
+  const { loadFavorites } = useContext(ShopContext)
   const [currentState, setCurrentState] = useState('Login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -20,10 +22,14 @@ const Login = () => {
       if (currentState === 'Login') {
         await authService.login(email, password)
         toast.success('Login realizado com sucesso!')
+        // Carrega favoritos do banco após login
+        await loadFavorites()
         navigate('/')
       } else {
         await authService.register(name, email, password)
         toast.success('Conta criada com sucesso!')
+        // Carrega favoritos do banco após cadastro
+        await loadFavorites()
         navigate('/')
       }
     } catch (error) {

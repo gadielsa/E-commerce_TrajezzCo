@@ -1,4 +1,4 @@
-import jezz_logo from './trjz_logo_nobg_black.png'
+import jezz_logo from './trjz_logo_nobg_black.svg'
 import search_icon from './search_icon.png'
 import user from './user.png'
 import shopping_bag from './shopping_bag.png'

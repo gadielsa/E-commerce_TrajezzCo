@@ -31,26 +31,35 @@ export const calcularFrete = async ({ cepDestino, produtos }) => {
     // Validar CEP
     const cepLimpo = cepDestino.replace(/\D/g, '');
     if (cepLimpo.length !== 8) {
-      throw new Error('CEP de destino inválido');
+      throw new Error('CEP de destino deve conter 8 dígitos');
+    }
+
+    // Validar produtos
+    if (!produtos || !Array.isArray(produtos) || produtos.length === 0) {
+      throw new Error('Lista de produtos é obrigatória');
     }
 
     // CEP de origem (seu armazém/loja)
-    const cepOrigem = process.env.CEP_ORIGEM || '01310100'; // Exemplo: Av Paulista, SP
+    const cepOrigem = process.env.CEP_ORIGEM || '01310100';
+    console.log(`🚀 Iniciando cálculo de frete: ${cepDestino} → ${cepOrigem}`);
 
     // Calcular dimensões e peso total
     let pesoTotal = 0;
     let volumeTotal = { altura: 0, largura: 0, comprimento: 0 };
 
     produtos.forEach(produto => {
-      const peso = produto.peso || 0.3; // kg
-      const quantidade = produto.quantidade || 1;
+      const peso = parseFloat(produto.peso) || 0.3; // kg
+      const quantidade = parseInt(produto.quantidade) || 1;
+      const preco = parseFloat(produto.preco) || 0;
       
       pesoTotal += peso * quantidade;
       
       // Dimensões padrão se não especificadas (cm)
-      volumeTotal.altura = Math.max(volumeTotal.altura, produto.altura || 10);
-      volumeTotal.largura = Math.max(volumeTotal.largura, produto.largura || 15);
-      volumeTotal.comprimento += (produto.comprimento || 20) * quantidade;
+      volumeTotal.altura = Math.max(volumeTotal.altura, parseInt(produto.altura) || 10);
+      volumeTotal.largura = Math.max(volumeTotal.largura, parseInt(produto.largura) || 15);
+      volumeTotal.comprimento += (parseInt(produto.comprimento) || 20) * quantidade;
+      
+      console.log(`  📦 Produto: ${produto.nome || 'N/A'} - Peso: ${peso}kg x ${quantidade}, Preço: R$ ${preco.toFixed(2)}`);
     });
 
     // Limites do Melhor Envio
@@ -85,25 +94,53 @@ export const calcularFrete = async ({ cepDestino, produtos }) => {
       }
     };
 
-    console.log('📦 Calculando frete:', payload);
+    console.log(`📊 Payload enviado para Melhor Envio:`, JSON.stringify(payload, null, 2));
+    console.log(`💰 Token configurado: ${MELHOR_ENVIO_TOKEN ? 'SIM' : 'NÃO'}`);
+    console.log(`🔗 URL da API: ${MELHOR_ENVIO_API}`);
 
     // Fazer requisição ao Melhor Envio
     const response = await melhorEnvioClient.post('/shipment/calculate', payload);
 
+    // Verificar resposta
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('⚠️ Resposta inválida do Melhor Envio:', response.data);
+      throw new Error('Resposta inválida da API de frete');
+    }
+
     // Processar e formatar cotações
-    const cotacoes = response.data.map(cotacao => ({
-      id: cotacao.id,
-      nome: cotacao.name,
-      servico: cotacao.company.name,
-      preco: parseFloat(cotacao.price),
-      prazoEntrega: cotacao.delivery_time,
-      servicoCompleto: `${cotacao.company.name} - ${cotacao.name}`,
-      logo: cotacao.company.picture,
-      error: cotacao.error || null
-    })).filter(c => !c.error); // Filtrar erros
+    const cotacoes = response.data
+      .map(cotacao => {
+        // Verificar se há erro na cotação
+        if (cotacao.error) {
+          console.warn(`⚠️ Erro na cotação ${cotacao.name}: ${cotacao.error}`);
+          return null;
+        }
+
+        return {
+          id: cotacao.id,
+          nome: cotacao.name,
+          servico: cotacao.company?.name || 'Transportadora',
+          preco: parseFloat(cotacao.price) || 0,
+          prazoEntrega: parseInt(cotacao.delivery_time) || 0,
+          servicoCompleto: `${cotacao.company?.name || 'Transportadora'} - ${cotacao.name}`,
+          logo: cotacao.company?.picture || '',
+          error: null
+        };
+      })
+      .filter(c => c !== null); // Filtrar erros
+
+    if (cotacoes.length === 0) {
+      console.warn('⚠️ Nenhuma cotação válida retornada');
+      throw new Error('Nenhuma opção de frete disponível para este CEP');
+    }
 
     // Ordenar por preço
     cotacoes.sort((a, b) => a.preco - b.preco);
+
+    console.log(`✅ Frete calculado com sucesso! ${cotacoes.length} opções disponíveis`);
+    cotacoes.forEach(c => {
+      console.log(`   - ${c.servicoCompleto}: R$ ${c.preco.toFixed(2)} (${c.prazoEntrega} dias)`);
+    });
 
     return {
       success: true,
@@ -117,7 +154,26 @@ export const calcularFrete = async ({ cepDestino, produtos }) => {
       }
     };
   } catch (error) {
-    console.error('❌ Erro ao calcular frete:', error.response?.data || error.message);
+    console.error('❌ Erro ao calcular frete:');
+    console.error('   Status:', error.response?.status);
+    console.error('   Mensagem:', error.response?.data?.message || error.message);
+    console.error('   Dados:', error.response?.data);
+    
+    // Tratamento específico de erros
+    if (error.response?.status === 401) {
+      console.error('❌ ERRO 401: Token inválido ou expirado. Verifique MELHOR_ENVIO_API_KEY no .env');
+      throw new Error('Token de autenticação inválido. Configure corretamente.');
+    }
+
+    if (error.response?.status === 422) {
+      console.error('❌ ERRO 422: Dados inválidos enviados para a API');
+      throw new Error('Dados de frete inválidos. Verifique CEP e dimensões.');
+    }
+
+    if (error.message.includes('ECONNREFUSED') || error.message.includes('ETIMEDOUT')) {
+      console.error('❌ ERRO DE CONEXÃO: Não conseguiu conectar na API do Melhor Envio');
+      throw new Error('Erro ao conectar com serviço de frete. Tente novamente.');
+    }
     
     // Se a API não estiver configurada, retornar fretes fictícios
     if (!MELHOR_ENVIO_TOKEN || MELHOR_ENVIO_TOKEN === 'seu_api_key_aqui') {

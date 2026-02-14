@@ -65,7 +65,7 @@ const Navbar = () => {
           <Link to='/favoritos' className='hidden sm:inline-flex items-center hover:opacity-80'>
             <img src={assets.heart} alt='favoritos' className='w-5 h-5 cursor-pointer hover:scale-110 transition-transform' />
           </Link>
-          <Link to='/carrinho' className='relative group'>
+          <Link to='/sacola' className='relative group'>
             <img src={assets.shopping_bag} className='w-5 cursor-pointer hover:scale-110 transition-transform' alt="cart" />
             {getCartCount() > 0 && <p className='absolute right-[-8px] bottom-[-8px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px] font-bold'>{getCartCount()}</p>}
           </Link>

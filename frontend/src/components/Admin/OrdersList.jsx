@@ -8,6 +8,7 @@ const OrdersList = () => {
   const [filter, setFilter] = useState('all')
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
+  const [trackingModal, setTrackingModal] = useState({ open: false, orderId: null, trackingCode: '', orderNumber: '' })
 
   useEffect(() => {
     fetchOrders()
@@ -39,6 +40,48 @@ const OrdersList = () => {
       fetchOrders()
     } catch (error) {
       toast.error(error.message || 'Erro ao atualizar status')
+      console.error('Erro:', error)
+    }
+  }
+
+  const handleAddTracking = (order) => {
+    setTrackingModal({
+      open: true,
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      trackingCode: order.trackingCode || ''
+    })
+  }
+
+  const handleSaveTracking = async () => {
+    if (!trackingModal.trackingCode.trim()) {
+      toast.error('Preencha o código de rastreamento')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:5000/api/orders/' + trackingModal.orderId + '/status', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          trackingCode: trackingModal.trackingCode,
+          status: 'Enviado'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao salvar tracking code')
+      }
+
+      toast.success('Código de rastreamento adicionado!')
+      setTrackingModal({ open: false, orderId: null, trackingCode: '', orderNumber: '' })
+      fetchOrders()
+    } catch (error) {
+      toast.error(error.message || 'Erro ao salvar tracking code')
       console.error('Erro:', error)
     }
   }
@@ -157,12 +200,20 @@ const OrdersList = () => {
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => handleEdit(order)}
-                      className='px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm'
-                    >
-                      Alterar Status
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleAddTracking(order)}
+                        className='px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm'
+                      >
+                        Rastreamento
+                      </button>
+                      <button
+                        onClick={() => handleEdit(order)}
+                        className='px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm'
+                      >
+                        Status
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -174,6 +225,60 @@ const OrdersList = () => {
       {filteredOrders.length === 0 && (
         <div className='text-center py-10 text-gray-500'>
           Nenhum pedido encontrado com este status
+        </div>
+      )}
+
+      {/* Modal de Rastreamento */}
+      {trackingModal.open && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-lg max-w-md w-full'>
+            <div className='p-6 border-b'>
+              <h3 className='text-lg font-bold text-gray-900'>Adicionar Código de Rastreamento</h3>
+              <p className='text-sm text-gray-600 mt-1'>Pedido: {trackingModal.orderNumber}</p>
+            </div>
+
+            <div className='p-6 space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Código de Rastreamento
+                </label>
+                <input
+                  type='text'
+                  value={trackingModal.trackingCode}
+                  onChange={(e) => setTrackingModal({
+                    ...trackingModal,
+                    trackingCode: e.target.value.toUpperCase()
+                  })}
+                  placeholder='Ex: AA123456789BR'
+                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600'
+                />
+                <p className='text-xs text-gray-500 mt-1'>
+                  Obtenha este código da Melhor Envio após gerar a etiqueta
+                </p>
+              </div>
+
+              <div className='bg-blue-50 p-3 rounded border border-blue-200'>
+                <p className='text-sm text-blue-800'>
+                  ℹ️ <strong>Dica:</strong> Ao salvar, o status do pedido será alterado para "Enviado"
+                </p>
+              </div>
+            </div>
+
+            <div className='p-6 border-t flex gap-3'>
+              <button
+                onClick={() => setTrackingModal({ open: false, orderId: null, trackingCode: '', orderNumber: '' })}
+                className='flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition'
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveTracking}
+                className='flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium'
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

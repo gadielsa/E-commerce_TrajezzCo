@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Title from '../components/Title'
 import { assets } from '../assets/assets'
 import { toast } from 'react-toastify'
+import axios from 'axios'
 
 const Contact = () => {
 
@@ -11,18 +12,35 @@ const Contact = () => {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
-    setTimeout(() => {
-      toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.')
-      setName('')
-      setEmail('')
-      setSubject('')
-      setMessage('')
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/contact`,
+        {
+          name,
+          email,
+          subject,
+          message
+        }
+      )
+
+      if (response.data.success) {
+        toast.success(response.data.message)
+        setName('')
+        setEmail('')
+        setSubject('')
+        setMessage('')
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error)
+      const errorMessage = error.response?.data?.message || 'Erro ao enviar mensagem. Tente novamente mais tarde.'
+      toast.error(errorMessage)
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (

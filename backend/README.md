@@ -43,6 +43,19 @@ npm start
 
 O servidor estará rodando em: `http://localhost:5000`
 
+## 👤 Criar usuário admin
+
+Defina as variáveis de ambiente e execute o script:
+
+```bash
+set ADMIN_NAME=Administrador
+set ADMIN_EMAIL=admin@trajezzco.com
+set ADMIN_PASSWORD=uma_senha_forte
+node scripts/createAdminUser.js
+```
+
+Se quiser customizar a role, use `ADMIN_ROLE` (padrão: `admin`).
+
 ## 📁 Estrutura do Projeto
 
 ```

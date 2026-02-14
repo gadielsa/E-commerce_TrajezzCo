@@ -12,6 +12,7 @@ import Favorites from './pages/Favorites'
 import Checkout from './pages/Checkout'
 import ConfirmarPagamento from './pages/ConfirmarPagamento'
 import Orders from './pages/Orders'
+import TrackingPublic from './pages/TrackingPublic'
 import AdminPanel from './pages/AdminPanel'
 // import Careers from './pages/Careers'
 import Navbar from './components/Navbar'
@@ -58,13 +59,14 @@ const App = () => {
           <Route path='/contato' element={<Contact />} />
           {/* <Route path='/carreiras' element={<Careers />} /> */}
           <Route path='/product/:productId' element={<Product />} />
-          <Route path='/carrinho' element={<Cart />} />
+          <Route path='/sacola' element={<Cart />} />
           <Route path='/login' element={<Login />} />
           <Route path='/perfil' element={<Profile />} />
           <Route path='/favoritos' element={<Favorites />} />
           <Route path='/checkout' element={<Checkout />} />
           <Route path='/confirmar-pagamento/:orderId' element={<ConfirmarPagamento />} />
           <Route path='/pedidos' element={<Orders />} />
+          <Route path='/rastreamento' element={<TrackingPublic />} />
           <Route path='/admin' element={<ProtectedAdminRoute element={<AdminPanel />} />} />
         </Routes>
       </main>

@@ -28,12 +28,21 @@ const ProductList = ({ refreshTrigger }) => {
 
   const handleEdit = (product) => {
     setEditingId(product._id)
-    setEditData(product)
+    setEditData({
+      name: product.name,
+      price: product.price,
+      isAvailable: product.isAvailable ?? true
+    })
   }
 
   const handleSaveEdit = async () => {
     try {
-      await productService.updateProduct(editingId, editData)
+      const payload = {
+        name: editData.name,
+        price: editData.price,
+        isAvailable: editData.isAvailable ?? true
+      }
+      await productService.updateProduct(editingId, payload)
       toast.success('Produto atualizado com sucesso!')
       setEditingId(null)
       fetchProducts()
@@ -70,8 +79,9 @@ const ProductList = ({ refreshTrigger }) => {
               <th className='text-left py-3 px-4 font-semibold text-gray-700'>Nome</th>
               <th className='text-left py-3 px-4 font-semibold text-gray-700'>Categoria</th>
               <th className='text-left py-3 px-4 font-semibold text-gray-700'>Preço</th>
+              <th className='text-left py-3 px-4 font-semibold text-gray-700'>Status</th>
               <th className='text-left py-3 px-4 font-semibold text-gray-700'>Tamanhos</th>
-              <th className='text-left py-3 px-4 font-semibold text-gray-700 w-[200px]'>Ações</th>
+              <th className='text-left py-3 px-4 font-semibold text-gray-700 w-[260px]'>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -103,9 +113,43 @@ const ProductList = ({ refreshTrigger }) => {
                     `R$ ${product.price.toFixed(2)}`
                   )}
                 </td>
+                <td className='py-4 px-4 text-gray-700'>
+                  {editingId === product._id ? (
+                    <div className='relative inline-block w-full min-w-[160px]'>
+                      <select
+                        value={(editData.isAvailable ?? true) ? 'true' : 'false'}
+                        onChange={(e) => setEditData({
+                          ...editData,
+                          isAvailable: e.target.value === 'true'
+                        })}
+                        className={`appearance-none w-full px-3 py-2 pr-8 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:border-gray-300 bg-white cursor-pointer hover:border-gray-400 transition-all text-sm ${
+                          editData.isAvailable === false ? 'text-red-700' : 'text-green-700'
+                        }`}
+                      >
+                        <option value='true' style={{ color: '#15803d' }}>Disponível</option>
+                        <option value='false' style={{ color: '#b91c1c' }}>Indisponível</option>
+                      </select>
+                      <div className='absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7'></path>
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        product.isAvailable === false
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {product.isAvailable === false ? 'Indisponível' : 'Disponível'}
+                    </span>
+                  )}
+                </td>
                 <td className='py-4 px-4 text-gray-700'>{product.sizes?.join(', ') || 'N/A'}</td>
                 <td className='py-4 px-4'>
-                  <div className='inline-flex items-center gap-2 min-w-[170px]'>
+                  <div className='inline-flex items-center gap-2 min-w-[240px]'>
                   {editingId === product._id ? (
                     <>
                       <button
