@@ -38,7 +38,7 @@ export const sendContactMessage = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Mensagem enviada com sucesso! Entraremos em contato em breve.'
+      message: 'Mensagem enviada com sucesso para a nossa equipe! Agradecemos pelo feedback.'
     });
   } catch (error) {
     console.error('Erro ao processar contato:', error);
@@ -58,17 +58,18 @@ export const checkEmailStatus = async (req, res) => {
   try {
     // Verificar se as variáveis de ambiente estão configuradas
     const hasApiKey = !!process.env.SENDGRID_API_KEY;
-    const hasFromEmail = !!process.env.SENDGRID_FROM_EMAIL;
-    const hasAdminEmail = !!process.env.ADMIN_EMAIL;
+    const hasDefaultFromEmail = !!process.env.SENDGRID_FROM_EMAIL;
+    const hasContactFromEmail = !!process.env.SENDGRID_FROM_EMAIL_CONTACT || hasDefaultFromEmail;
+    const hasContactEmail = !!process.env.CONTACT_RECEIVER_EMAIL;
 
-    if (!hasApiKey || !hasFromEmail || !hasAdminEmail) {
+    if (!hasApiKey || !hasContactFromEmail || !hasContactEmail) {
       return res.status(400).json({
         success: false,
         message: 'Serviço de email não está totalmente configurado',
         details: {
           apiKey: hasApiKey,
-          fromEmail: hasFromEmail,
-          adminEmail: hasAdminEmail
+          fromEmail: hasContactFromEmail,
+          contactEmail: hasContactEmail
         }
       });
     }

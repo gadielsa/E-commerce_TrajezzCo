@@ -20,43 +20,17 @@ export const sendContactEmail = async (name, email, subject, message) => {
   }
   
   try {
-    // Email para o cliente confirmando recebimento
-    const customerMsg = {
-      to: email,
+    const contactFromEmail = process.env.SENDGRID_FROM_EMAIL_CONTACT || process.env.SENDGRID_FROM_EMAIL;
+
+    const adminMsg = {
+      to: process.env.CONTACT_RECEIVER_EMAIL,
       from: {
-        email: process.env.SENDGRID_FROM_EMAIL,
+        email: contactFromEmail,
         name: process.env.SENDGRID_FROM_NAME
       },
-      subject: 'Recebemos sua mensagem - TrajezzCo',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Obrigado pelo contato!</h2>
-          <p>Olá <strong>${name}</strong>,</p>
-          <p>Recebemos sua mensagem com o assunto "<strong>${subject}</strong>" e responderemos assim que possível.</p>
-          
-          <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-left: 4px solid #000;">
-            <p><strong>Sua mensagem:</strong></p>
-            <p>${message.replace(/\n/g, '<br>')}</p>
-          </div>
-          
-          <p>Nossa equipe entrará em contato em até 24 horas.</p>
-          
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">
-            TrajezzCo - E-commerce de Moda<br>
-            São Paulo, SP - Brasil<br>
-            <a href="https://trajezzco.com.br">www.trajezzco.com.br</a>
-          </p>
-        </div>
-      `
-    };
-
-    // Email para o admin
-    const adminMsg = {
-      to: process.env.ADMIN_EMAIL,
-      from: {
-        email: process.env.SENDGRID_FROM_EMAIL,
-        name: process.env.SENDGRID_FROM_NAME
+      replyTo: {
+        email: email,
+        name: name
       },
       subject: `Novo contato: ${subject}`,
       html: `
@@ -75,21 +49,23 @@ export const sendContactEmail = async (name, email, subject, message) => {
             <p>${message.replace(/\n/g, '<br>')}</p>
           </div>
           
-          <p>
+          <p style="margin-top: 20px;">
             <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)}" 
-               style="background-color: #000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; display: inline-block;">
+               style="background-color: #000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; display: inline-block; font-weight: bold;">
               Responder
             </a>
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">
+            TrajezzCo - E-commerce de Moda<br>
+            Mensagem recebida pelo formulário de contato do site
           </p>
         </div>
       `
     };
 
-    // Enviar ambos os emails em paralelo
-    await Promise.all([
-      sgMail.send(customerMsg),
-      sgMail.send(adminMsg)
-    ]);
+    await sgMail.send(adminMsg);
 
     return {
       success: true,
@@ -111,10 +87,12 @@ export const sendEmail = async (to, subject, html) => {
   }
   
   try {
+    const notificationsFromEmail = process.env.SENDGRID_FROM_EMAIL_NOTIFICATIONS || process.env.SENDGRID_FROM_EMAIL;
+
     const msg = {
       to,
       from: {
-        email: process.env.SENDGRID_FROM_EMAIL,
+        email: notificationsFromEmail,
         name: process.env.SENDGRID_FROM_NAME
       },
       subject,

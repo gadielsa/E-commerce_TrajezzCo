@@ -16,11 +16,13 @@ const Navbar = () => {
   }
   
   const currentUser = getUserInfo()
+  const isLoggedIn = Boolean(localStorage.getItem('token'))
 
   const {setShowSearch, getCartCount} = useContext(ShopContext)
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     localStorage.removeItem('userName')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userId')
@@ -74,12 +76,19 @@ const Navbar = () => {
             <img src={assets.user} className='w-5 cursor-pointer hover:scale-110 transition-transform' alt="user" />
             <div className='group-hover:block hidden absolute dropdown-menu right-0 pt-4 z-50'>
               <div className='flex flex-col gap-3 w-40 py-4 px-5 bg-white border border-gray-200 shadow-lg rounded'>
-                {currentUser?.role === 'admin' && (
+                {!isLoggedIn && (
+                  <Link to='/login' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Entrar/Registrar</Link>
+                )}
+                {isLoggedIn && currentUser?.role === 'admin' && (
                   <Link to='/admin' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Admin</Link>
                 )}
-                <Link to='/pedidos' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Meus Pedidos</Link>
-                <Link to='/perfil' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Perfil</Link>
-                <p onClick={handleLogout} className='cursor-pointer hover:text-black text-gray-600 text-sm'>Sair</p>
+                {isLoggedIn && (
+                  <>
+                    <Link to='/pedidos' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Meus Pedidos</Link>
+                    <Link to='/perfil' className='cursor-pointer hover:text-black text-gray-600 text-sm'>Perfil</Link>
+                    <p onClick={handleLogout} className='cursor-pointer hover:text-black text-gray-600 text-sm'>Sair</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -100,7 +109,12 @@ const Navbar = () => {
             <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/estoque'>ESTOQUE</NavLink>
             <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/sobre'>SOBRE</NavLink>
             <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/contato'>CONTATO</NavLink>
-            <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/pedidos'>MEUS PEDIDOS</NavLink>
+            {!isLoggedIn && (
+              <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/login'>ENTRAR/REGISTRAR</NavLink>
+            )}
+            {isLoggedIn && (
+              <NavLink onClick={() => setIsMenuOpen(false)} className='py-2 text-sm font-medium hover:text-black transition-all' to='/pedidos'>MEUS PEDIDOS</NavLink>
+            )}
           </div>
         </div>
       </div>

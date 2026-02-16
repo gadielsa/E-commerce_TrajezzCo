@@ -74,7 +74,7 @@ export const orderAPI = {
     }),
 
   // Obter pedidos do usuário
-  getUserOrders: () => apiRequest('/orders/user'),
+  getUserOrders: () => apiRequest('/orders/my'),
 
   // Obter um pedido por ID
   getById: (id) => apiRequest(`/orders/${id}`),
@@ -84,7 +84,7 @@ export const orderAPI = {
 
   // Atualizar status do pedido (admin)
   updateStatus: (id, status) =>
-    apiRequest(`/orders/${id}`, {
+    apiRequest(`/orders/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     }),

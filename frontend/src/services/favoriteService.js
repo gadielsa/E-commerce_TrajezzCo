@@ -1,4 +1,4 @@
-import api from '../config/api'
+import { fetchWithAuth } from '../config/api'
 
 const favoriteService = {
   // Obter favoritos do usuário
@@ -9,18 +9,18 @@ const favoriteService = {
         return { success: false, message: 'Usuário não autenticado' }
       }
 
-      const response = await api.get('/users/favorites', {
+      const response = await fetchWithAuth('/users/favorites', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      return response.data
+      return response
     } catch (error) {
       console.error('Erro ao buscar favoritos:', error)
       return {
         success: false,
-        message: error.response?.data?.message || 'Erro ao buscar favoritos'
+        message: error.message || 'Erro ao buscar favoritos'
       }
     }
   },
@@ -33,21 +33,22 @@ const favoriteService = {
         return { success: false, message: 'Usuário não autenticado' }
       }
 
-      const response = await api.post('/users/favorites', 
-        { productId },
+      const response = await fetchWithAuth('/users/favorites', 
         {
+          method: 'POST',
+          body: JSON.stringify({ productId }),
           headers: {
             Authorization: `Bearer ${token}`
           }
         }
       )
 
-      return response.data
+      return response
     } catch (error) {
       console.error('Erro ao adicionar favorito:', error)
       return {
         success: false,
-        message: error.response?.data?.message || 'Erro ao adicionar favorito'
+        message: error.message || 'Erro ao adicionar favorito'
       }
     }
   },
@@ -60,18 +61,19 @@ const favoriteService = {
         return { success: false, message: 'Usuário não autenticado' }
       }
 
-      const response = await api.delete(`/users/favorites/${productId}`, {
+      const response = await fetchWithAuth(`/users/favorites/${productId}`, {
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      return response.data
+      return response
     } catch (error) {
       console.error('Erro ao remover favorito:', error)
       return {
         success: false,
-        message: error.response?.data?.message || 'Erro ao remover favorito'
+        message: error.message || 'Erro ao remover favorito'
       }
     }
   },
@@ -84,21 +86,22 @@ const favoriteService = {
         return { success: false, message: 'Usuário não autenticado' }
       }
 
-      const response = await api.post('/users/favorites/sync',
-        { favorites: localFavorites },
+      const response = await fetchWithAuth('/users/favorites/sync',
         {
+          method: 'POST',
+          body: JSON.stringify({ favorites: localFavorites }),
           headers: {
             Authorization: `Bearer ${token}`
           }
         }
       )
 
-      return response.data
+      return response
     } catch (error) {
       console.error('Erro ao sincronizar favoritos:', error)
       return {
         success: false,
-        message: error.response?.data?.message || 'Erro ao sincronizar favoritos'
+        message: error.message || 'Erro ao sincronizar favoritos'
       }
     }
   }

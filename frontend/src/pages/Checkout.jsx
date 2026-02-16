@@ -171,7 +171,7 @@ const Checkout = () => {
       }
       
       // Processa pagamento com cartão de crédito
-      if (method === 'cc') {
+      if (method === 'creditcard') {
         setStripeError('');
         if (!stripe || !elements) {
           toast.error('Stripe ainda não está pronto. Tente novamente.');
@@ -383,8 +383,8 @@ const Checkout = () => {
                 <span className='font-medium'>PIX (6% de desconto)</span>
               </div>
             </label>
-            <label className='flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-all' style={{borderColor: method === 'cc' ? '#000' : '#ddd'}}>
-              <input type="radio" name="payment" value="cc" checked={method === 'cc'} onChange={()=>setMethod('cc')} className='w-4 h-4' />
+            <label className='flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-all' style={{borderColor: method === 'creditcard' ? '#000' : '#ddd'}}>
+              <input type="radio" name="payment" value="creditcard" checked={method === 'creditcard'} onChange={()=>setMethod('creditcard')} className='w-4 h-4' />
               <div className='ml-4'>
                 <span className='font-medium'>Cartão de Crédito</span>
               </div>
@@ -392,7 +392,7 @@ const Checkout = () => {
           </div>
           
           {/* Formulário do Cartão de Crédito */}
-          {method === 'cc' && (
+          {method === 'creditcard' && (
             <div className='mt-6 p-6 bg-white rounded-lg border-2 border-gray-200'>
               <h3 className='text-lg font-bold text-gray-900 mb-4'>Dados do Cartão</h3>
               
