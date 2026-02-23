@@ -138,12 +138,6 @@ const Profile = () => {
     return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
   }
 
-  const handleLogout = () => {
-    authService.logout()
-    toast.success('Você foi desconectado!')
-    navigate('/login')
-  }
-
   if (loading) {
     return <div className='min-h-screen bg-gray-50 py-12 px-4 flex items-center justify-center'>Carregando...</div>
   }
@@ -350,29 +344,23 @@ const Profile = () => {
               <div className='border-b border-gray-200 pb-4'>
                 <p className='text-sm font-medium text-gray-500 mb-1'>Endereço</p>
                 <p className='text-lg text-gray-900'>
-                  {user.address || 'Não informado'}
-                  {user.addressNumber && `, ${user.addressNumber}`}
-                  {user.city && ` - ${user.city}`}
-                  {user.state && ` - ${user.state}`}
-                  {user.zipCode && ` - ${user.zipCode}`}
-                  {user.country && `, ${user.country}`}
+                  {user.address || user.city || user.state || user.zipCode ? (
+                    <>
+                      {user.address}
+                      {user.addressNumber && `, ${user.addressNumber}`}
+                      {user.city && ` - ${user.city}`}
+                      {user.state && ` - ${user.state}`}
+                      {user.zipCode && ` - ${user.zipCode}`}
+                      {user.country && `, ${user.country}`}
+                    </>
+                  ) : (
+                    'Não informado'
+                  )}
                 </p>
               </div>
             </div>
           )}
         </div>
-
-        {/* Botão de Sair */}
-        {!isEditing && (
-          <div className='flex justify-center'>
-            <button
-              onClick={handleLogout}
-              className='bg-red-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors'
-            >
-              Sair da Conta
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )

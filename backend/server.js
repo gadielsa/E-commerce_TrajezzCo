@@ -2,6 +2,15 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/database.js';
+import {
+  helmetConfig,
+  globalRateLimit,
+  loginRateLimit,
+  registerRateLimit,
+  publicApiRateLimit,
+  contactRateLimit,
+  paymentRateLimit
+} from './middleware/security.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -12,13 +21,25 @@ const app = express();
 // Conectar ao banco de dados
 connectDB();
 
-// Middlewares
+// ============================================
+// 🛡️ MIDDLEWARE DE SEGURANÇA
+// ============================================
+
+// Helmet - Proteção de Headers HTTP
+app.use(helmetConfig);
+
+// Rate Limiting Global
+app.use(globalRateLimit);
+
+// CORS seguro
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:5174'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {

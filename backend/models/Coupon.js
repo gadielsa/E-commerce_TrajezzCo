@@ -110,7 +110,6 @@ const couponSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-couponSchema.index({ code: 1 });
 couponSchema.index({ isActive: 1 });
 couponSchema.index({ validFrom: 1, validUntil: 1 });
 couponSchema.index({ createdAt: -1 });

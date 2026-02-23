@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
-import { assets } from '../assets/assets'
 import { Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContextContext'
 
@@ -8,24 +7,15 @@ const Hero = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isTransitionEnabled, setIsTransitionEnabled] = useState(true)
 
-  const recentProductImages = useMemo(() => {
-    const now = new Date()
-    const lastMonth = new Date(now)
-    lastMonth.setMonth(now.getMonth() - 1)
-
-    const recentProducts = (products || []).filter((product) => {
-      const productDate = product?.createdAt ? new Date(product.createdAt) : product?.updatedAt ? new Date(product.updatedAt) : null
-      return productDate && productDate >= lastMonth && productDate <= now
-    })
-
-    const images = recentProducts
+  const productImages = useMemo(() => {
+    const images = (products || [])
       .map((product) => (Array.isArray(product.image) ? product.image[0] : Array.isArray(product.images) ? product.images[0] : product.image))
       .filter(Boolean)
 
     return images
   }, [products])
 
-  const heroImages = recentProductImages.length > 0 ? recentProductImages : [assets.jezz_image]
+  const heroImages = productImages
 
   useEffect(() => {
     if (heroImages.length <= 1) {
@@ -87,32 +77,38 @@ const Hero = () => {
       </div>
       {/* Hero - Lado direito */}
       <div className='w-full sm:w-2/5 relative flex items-center justify-center py-0'>
-        <div className='relative overflow-hidden bg-gray-100 rounded-lg w-full aspect-square group'>
-          <div
-            className={`flex h-full ${isTransitionEnabled ? 'transition-transform duration-700 ease-in-out' : ''}`}
-            style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-          >
-            {heroImages.map((src, index) => (
-              <div className='w-full h-full flex-shrink-0' key={`${src}-${index}`}>
-                <img
-                  className='w-full h-full object-cover'
-                  src={src}
-                  alt='Nova coleção'
-                />
-              </div>
-            ))}
-            {heroImages.length > 1 && (
-              <div className='w-full h-full flex-shrink-0' key={`${heroImages[0]}-clone`}>
-                <img
-                  className='w-full h-full object-cover'
-                  src={heroImages[0]}
-                  alt='Nova coleção'
-                />
-              </div>
-            )}
+        {heroImages.length > 0 ? (
+          <div className='relative overflow-hidden bg-gray-100 rounded-lg w-full aspect-square group'>
+            <div
+              className={`flex h-full ${isTransitionEnabled ? 'transition-transform duration-700 ease-in-out' : ''}`}
+              style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+            >
+              {heroImages.map((src, index) => (
+                <div className='w-full h-full flex-shrink-0' key={`${src}-${index}`}>
+                  <img
+                    className='w-full h-full object-cover'
+                    src={src}
+                    alt='Nova coleção'
+                  />
+                </div>
+              ))}
+              {heroImages.length > 1 && (
+                <div className='w-full h-full flex-shrink-0' key={`${heroImages[0]}-clone`}>
+                  <img
+                    className='w-full h-full object-cover'
+                    src={heroImages[0]}
+                    alt='Nova coleção'
+                  />
+                </div>
+              )}
+            </div>
+            <div className='absolute inset-0 bg-transparent group-hover:bg-black/10 transition-all duration-300 pointer-events-none'></div>
           </div>
-          <div className='absolute inset-0 bg-transparent group-hover:bg-black/10 transition-all duration-300 pointer-events-none'></div>
-        </div>
+        ) : (
+          <div className='relative overflow-hidden bg-gray-100 rounded-lg w-full aspect-square flex items-center justify-center'>
+            <p className='text-gray-400 text-lg'>Carregando produtos...</p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,13 +1,14 @@
 import express from 'express';
 import Stripe from 'stripe';
 import { protect } from '../middleware/auth.js';
+import { paymentRateLimit } from '../middleware/security.js';
 import Order from '../models/Order.js';
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Criar Payment Intent
-router.post('/create-intent', protect, async (req, res) => {
+// Criar Payment Intent (com proteção contra abuso)
+router.post('/create-intent', paymentRateLimit, protect, async (req, res) => {
   try {
     const { amount, description, orderId } = req.body;
 
